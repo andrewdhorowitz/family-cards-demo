@@ -1,6 +1,7 @@
 {
   "kid": "Noah",
   "generated_at": "2026-10-29T09:00:00-04:00",
+  "last_changed_at": "2026-10-27T19:15:00-04:00",
   "window": {
     "start": "2026-10-29",
     "end": "2026-11-11"
@@ -28,6 +29,7 @@
           "big": true,
           "changed": false,
           "changed_note": null,
+          "changed_at": null,
           "legs": [
             {
               "kind": "pickup",
@@ -60,6 +62,7 @@
           "big": true,
           "changed": false,
           "changed_note": null,
+          "changed_at": null,
           "legs": [
             {
               "kind": "dropoff",
@@ -103,6 +106,7 @@
           "big": true,
           "changed": true,
           "changed_note": null,
+          "changed_at": "2026-10-27T19:15:00-04:00",
           "legs": []
         }
       ]
@@ -135,6 +139,7 @@
           "big": true,
           "changed": false,
           "changed_note": null,
+          "changed_at": null,
           "legs": []
         }
       ]

@@ -34,10 +34,13 @@
   .time, .place, .leg { font-size: 1rem; margin-top: 2px; }
   .leg { font-weight: 600; }
   .quiet { color: #666; padding: 6px 0; }
+  .updated { color: #888; font-size: .85rem; margin-top: 2px; }
+  .updated-item { color: #888; font-size: .8rem; margin-left: 6px; }
 </style>
 </head>
 <body>
-<header><h1 id="heading">My next two weeks</h1></header>
+<header><h1 id="heading">My next two weeks</h1>
+<div class="updated" id="updated"></div></header>
 <nav class="tabs" id="tabs"></nav>
 <main id="card"></main>
 <script>
@@ -47,9 +50,24 @@ function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, c =>
     ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
+function fmtStamp(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const datePart = d.toLocaleDateString("en-US",
+    { weekday: "short", month: "short", day: "numeric",
+      timeZone: "America/New_York" });
+  const timePart = d.toLocaleTimeString("en-US",
+    { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+  return datePart + " \u00b7 " + timePart;
+}
+function stamp(data) {
+  const iso = data.last_changed_at || data.generated_at;
+  return iso ? "Last changed: " + fmtStamp(iso) : "";
+}
 function render(data) {
   document.getElementById("heading").textContent =
     data.kid + " — next two weeks";
+  document.getElementById("updated").textContent = stamp(data);
   const main = document.getElementById("card");
   main.innerHTML = data.days.map(day => {
     const entries = day.entries.length ? day.entries.map(e => `
@@ -57,6 +75,7 @@ function render(data) {
         <div><span class="title">${esc(e.title)}</span>
           ${e.big ? '<span class="big-badge">Big</span>' : ""}
           ${e.changed ? '<span class="changed">CHANGED</span>' : ""}
+          ${e.changed && e.changed_at ? `<span class="updated-item">Updated ${esc(fmtStamp(e.changed_at))}</span>` : ""}
         </div>
         <div class="time">🕒 ${esc(e.time_label)}</div>
         ${e.place ? `<div class="place">📍 ${esc(e.place)}</div>` : ""}

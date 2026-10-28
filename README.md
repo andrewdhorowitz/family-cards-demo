@@ -15,6 +15,7 @@ events. Nothing here is real family data.
   JSON files this page renders), with all names and places genericized
   for this public demo; the demo JSON files here were written by hand
   to match its schema.
+- The heading stamp reads **"Last changed: …"** — when the card's content last actually changed, not when it was last rebuilt. A CHANGED entry also carries its own "Updated …" time (visible on Emma's and Noah's CHANGED examples).
 
 First real links are handed to each kid in person by their dad.
 

@@ -424,6 +424,7 @@ def build(start_d, end_d, snapshot_dir, suppress_diff_changed=False):
                 "big": not bool(SCHOOL_RE.search(summary)),
                 "changed": False,
                 "changed_note": None,
+                "changed_at": None,
                 "legs": [],
             }
             tm = TRANSPORT_ANY_RE.match(summary)
@@ -523,14 +524,53 @@ def build(start_d, end_d, snapshot_dir, suppress_diff_changed=False):
         # only). suppress_diff_changed is for logic-change regenerations:
         # the method switch itself must not tag entries as CHANGED.
         snap = Path(snapshot_dir) / f"{kid}.json"
-        if snap.exists() and not suppress_diff_changed:
-            prev = {e["id"]: e for day in json.loads(
-                snap.read_text())["days"] for e in day["entries"]}
+        prev_card = (json.loads(snap.read_text())
+                     if snap.exists() else None)
+        prev = ({e["id"]: e for day in prev_card["days"]
+                 for e in day["entries"]} if prev_card else {})
+        if prev_card and not suppress_diff_changed:
             for day in card["days"]:
                 for e in day["entries"]:
                     p = prev.get(e["id"])
                     if p and (p["start"] != e["start"] or p["end"] != e["end"]):
                         e["changed"] = True
+        # changed_at: when this run first detected the change. A still-
+        # changed entry whose change itself is unchanged vs the snapshot
+        # (same times/note/legs) keeps its ORIGINAL detection time; a new
+        # or altered change gets this run's generation time. Entries that
+        # are no longer changed simply carry changed_at=None.
+        gen_at = card["generated_at"]
+        for day in card["days"]:
+            for e in day["entries"]:
+                if not e["changed"]:
+                    continue
+                p = prev.get(e["id"])
+                if (p and p.get("changed") and p.get("changed_at")
+                        and p["start"] == e["start"] and p["end"] == e["end"]
+                        and p.get("changed_note") == e.get("changed_note")
+                        and p.get("legs") == e.get("legs")):
+                    e["changed_at"] = p["changed_at"]
+                else:
+                    e["changed_at"] = gen_at
+        # last_changed_at: when the card's CONTENT last actually changed
+        # vs the previous snapshot (entries/legs; the generated_at /
+        # last_changed_at / changed_at fields themselves don't count).
+        # A rebuild with identical content carries it over untouched, so
+        # the page stamp means "last changed", not "last rebuilt". First
+        # tracked run initializes it to that run's generation time.
+        def _sig_entries(c):
+            days = []
+            for day in c["days"]:
+                es = [{k: v for k, v in e.items() if k != "changed_at"}
+                      for e in day["entries"]]
+                days.append({**day, "entries": es})
+            return json.dumps(days, sort_keys=True, default=str)
+        if prev_card is None:
+            card["last_changed_at"] = gen_at
+        elif _sig_entries(card) != _sig_entries(prev_card):
+            card["last_changed_at"] = gen_at
+        else:
+            card["last_changed_at"] = prev_card.get("last_changed_at") or gen_at
         snap.parent.mkdir(parents=True, exist_ok=True)
         snap.write_text(json.dumps(card, indent=2))
         result[kid] = card
@@ -557,7 +597,9 @@ def main():
     for kid, card in cards.items():
         (out / f"{kid}.json").write_text(json.dumps(card, indent=2))
     (out / "manifest.json").write_text(json.dumps(
-        {"cards": [f"{kid}.json" for kid in cards]}, indent=2))
+        {"cards": [f"{kid}.json" for kid in cards],
+         "generated_at": next(iter(cards.values()))["generated_at"]},
+        indent=2))
     ev_path = Path(args.snapshot_dir).parent / (
         f"driver-evidence-{start_d.isoformat()}_{end_d.isoformat()}.json")
     ev_path.write_text(json.dumps(
@@ -567,6 +609,13 @@ def main():
     print(json.dumps({"counts": counts, "filtered": filtered,
                       "context": context,
                       "evidence_log": str(ev_path),
+                      "last_changed_at": {k: c["last_changed_at"]
+                                          for k, c in cards.items()},
+                      "changed_entries": [
+                          {"kid": k, "id": e["id"],
+                           "changed_at": e.get("changed_at")}
+                          for k, c in cards.items() for d in c["days"]
+                          for e in d["entries"] if e["changed"]],
                       "conflicts": [e for e in evidence if e["conflict"]]},
                      indent=2))
 
