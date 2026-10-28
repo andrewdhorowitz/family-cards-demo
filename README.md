@@ -38,3 +38,13 @@ scope (both cards, with tabs). Link format:
 `mint_codes.py` is the same minter the private version uses; the
 private system instead uses random per-kid expiring codes, minted in
 batches, with only hashes stored in its `codes.json`.
+
+## Kid-side notes (demo display only)
+The cards show the "📝 Anything on your side?" note box (note text plus
+optional date and optional estimated from/to times) **disabled**, with
+"Demo — notes are turned off here." In the private version the box is
+live on kid cards: submissions go to a same-origin endpoint that
+attributes the note from the kid's verified sign-in and stores it for
+Dad, and the kid's own notes list under the box. Here the endpoint is a
+stub that acknowledges and discards — nothing is stored or forwarded,
+and no real form or backend is referenced anywhere in this repo.

@@ -36,6 +36,19 @@
   .quiet { color: #666; padding: 6px 0; }
   .updated { color: #888; font-size: .85rem; margin-top: 2px; }
   .updated-item { color: #888; font-size: .8rem; margin-left: 6px; }
+  .notebox { background: #fff7ea; border: 2px dashed #b3541e;
+             border-radius: 16px; padding: 14px; margin: 16px 0; opacity: .75; }
+  .notebox h2 { font-size: 1.2rem; margin: 0 0 6px; }
+  .notebox p { margin: 0 0 10px; color: #555; font-size: .95rem; }
+  .notebox textarea { width: 100%; box-sizing: border-box; font-size: 1.05rem;
+             padding: 10px; border-radius: 10px; border: 1px solid #ccc;
+             min-height: 64px; }
+  .notebox .row { display: flex; gap: 8px; margin-top: 8px; }
+  .notebox input[type="date"], .notebox input[type="time"] { flex: 1;
+             font-size: 1rem; padding: 10px; border-radius: 10px;
+             border: 1px solid #ccc; }
+  .notebox button { background: #b3541e; color: #fff; border: none;
+             font-size: 1.05rem; padding: 10px 22px; border-radius: 999px; }
 </style>
 </head>
 <body>
@@ -86,8 +99,18 @@ function render(data) {
     return `<section class="day"><h2>${esc(day.label)}</h2>
       <span class="with with-${day.with.toLowerCase()}">With ${esc(day.with)}</span>
       ${entries}</section>`;
-  }).join("");
+  }).join("") + demoNoteBoxHtml;
 }
+const demoNoteBoxHtml = `<section class="notebox">
+  <h2>📝 Anything on your side?</h2>
+  <p>Something scheduled, or something you expect, that isn't here? Tell Dad — he'll see it.</p>
+  <textarea disabled placeholder="e.g. Sleepover at a friend's Friday night"></textarea>
+  <div class="row"><input type="date" disabled></div>
+  <div class="row"><input type="time" disabled><input type="time" disabled></div>
+  <p style="margin-top:8px">Date and times are optional — a guess is fine.</p>
+  <div class="row"><button type="button" disabled>Tell Dad</button></div>
+  <p style="margin-top:8px"><strong>Demo — notes are turned off here.</strong></p>
+</section>`;
 async function load() {
   // The auth gate (Phase 2) tells us who is looking: a kid scope sees
   // only her own card; parent/owner see every card with tabs.

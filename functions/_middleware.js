@@ -183,6 +183,17 @@ export async function onRequest(context) {
     });
   }
 
+  // --- /note: DEMO stub — acknowledges, never forwards anywhere -----
+  if (path === "/note") {
+    return new Response(JSON.stringify({ ok: true, demo: true }), {
+      status: 200,
+      headers: {
+        "content-type": "application/json",
+        "cache-control": "no-store",
+      },
+    });
+  }
+
   // --- Scope enforcement --------------------------------------------
   if (Object.prototype.hasOwnProperty.call(KID_FILES, scope)) {
     const allowed = new Set([
