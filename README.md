@@ -19,6 +19,15 @@ events. Nothing here is real family data.
 
 First real links are handed to each kid in person by their dad.
 
+## Architecture
+
+C4-lite diagrams (System Context inset + Container view, Mermaid,
+diagrams-as-code) for this demo system — Emma / Noah only, generic
+services, the three flows (publishing, access codes, kid notes):
+[docs/architecture.md](docs/architecture.md). That file is the
+canonical diagram source; it renders natively on GitHub and feeds the
+showcase site, so there is no second hand-maintained copy.
+
 ## Phase 2 — the auth/code gate (demo)
 This demo runs the same gate as the private version:
 `functions/_middleware.js` checks every request for a signed
