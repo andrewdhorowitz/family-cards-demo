@@ -41,9 +41,6 @@
 <nav class="tabs" id="tabs"></nav>
 <main id="card"></main>
 <script>
-const params = new URLSearchParams(location.search);
-const kidSlug = params.get("kid");           // e.g. ?kid=emma
-const ownerMode = params.get("view") === "owner" || !kidSlug;
 let cards = {};                                // slug -> data (all from JSON)
 
 function esc(s) {
@@ -73,12 +70,26 @@ function render(data) {
   }).join("");
 }
 async function load() {
+  // The auth gate (Phase 2) tells us who is looking: a kid scope sees
+  // only her own card; parent/owner see every card with tabs.
+  const scopeResp = await fetch("/scope.json");
+  if (!scopeResp.ok) {
+    document.getElementById("card").innerHTML =
+      '<div class="quiet">This link has expired — ask Dad for a new one.</div>';
+    return;
+  }
+  const { scope } = await scopeResp.json();
+  if (scope !== "parent" && scope !== "owner") {
+    const data = await (await fetch(scope + ".json")).json();
+    render(data);
+    return;
+  }
   const manifest = await (await fetch("manifest.json")).json();
   for (const file of manifest.cards) {
     cards[file.replace(".json", "")] = await (await fetch(file)).json();
   }
   const slugs = Object.keys(cards);
-  if (ownerMode && slugs.length > 1) {
+  if (slugs.length > 1) {
     const tabs = document.getElementById("tabs");
     tabs.style.display = "flex";
     slugs.forEach((slug, i) => {
@@ -94,7 +105,7 @@ async function load() {
     });
     render(cards[slugs[0]]);
   } else {
-    render(cards[kidSlug] || cards[slugs[0]]);
+    render(cards[slugs[0]]);
   }
 }
 load();
