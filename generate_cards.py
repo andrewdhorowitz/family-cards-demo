@@ -264,9 +264,9 @@ def resolve_driver(ev, leg, leg_dt, ev_start, ev_end, dad_dates, blocks,
 
 # --- filtering ---------------------------------------------------------------
 SENSITIVE_RE = re.compile(
-    r"therapy|therapist|counsel|psych|high\s*focus|support group|oa group|"
+    r"therapy|therapist|counsel|psych|support group|oa group|"
     r"doctor|\bdr\b|appointment with dr|dentist|dental|orthodon|"
-    r"creating\s*smiles|medical|clinic|hospital|insurance|autopay|bank|"
+    r"medical|clinic|hospital|insurance|autopay|bank|"
     r"zelle|payment|legal|court|custody|divorce|attorney|law\b|"
     r"prescriber|pharmacy|medication", re.I)
 SKIP_RE = re.compile(
@@ -299,7 +299,7 @@ def fetch_events(cal_id, start, end):
 
 def simple_place(ev, title):
     blob = f"{title} {ev.get('location') or ''}"
-    if re.search(r"riverside high|color guard|garden state cup", blob, re.I) \
+    if re.search(r"riverside high|color guard|state cup", blob, re.I) \
             and not re.search(r"state college", blob, re.I):
         place = "Riverside High"
     elif re.search(r"state college", blob, re.I):
