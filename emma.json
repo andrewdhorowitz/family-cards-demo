@@ -1,0 +1,173 @@
+{
+  "kid": "Emma",
+  "generated_at": "2026-10-29T09:00:00-04:00",
+  "window": {
+    "start": "2026-10-29",
+    "end": "2026-11-11"
+  },
+  "days": [
+    {
+      "date": "2026-10-29",
+      "label": "Thu Oct 29",
+      "with": "Mom",
+      "entries": [
+        {
+          "id": "emma-2026-10-29-soccer-practice",
+          "title": "Soccer practice",
+          "date": "2026-10-29",
+          "start": "2026-10-29T16:00:00-04:00",
+          "end": "2026-10-29T17:30:00-04:00",
+          "time_label": "4:00 PM\u20135:30 PM",
+          "place": "Riverside Park",
+          "big": true,
+          "changed": false,
+          "changed_note": null,
+          "legs": [
+            {
+              "kind": "dropoff",
+              "driver": "Dad",
+              "time_label": "4:00 PM"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-10-30",
+      "label": "Fri Oct 30",
+      "with": "Mom",
+      "entries": []
+    },
+    {
+      "date": "2026-10-31",
+      "label": "Sat Oct 31",
+      "with": "Dad",
+      "entries": [
+        {
+          "id": "emma-2026-10-31-halloween-party",
+          "title": "Halloween party",
+          "date": "2026-10-31",
+          "start": "2026-10-31T18:00:00-04:00",
+          "end": "2026-10-31T20:00:00-04:00",
+          "time_label": "6:00 PM\u20138:00 PM",
+          "place": "Community Center",
+          "big": true,
+          "changed": false,
+          "changed_note": null,
+          "legs": [
+            {
+              "kind": "dropoff",
+              "driver": "Dad",
+              "time_label": "6:00 PM"
+            },
+            {
+              "kind": "pickup",
+              "driver": "Dad",
+              "time_label": "8:00 PM"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-11-01",
+      "label": "Sun Nov 1",
+      "with": "Dad",
+      "entries": []
+    },
+    {
+      "date": "2026-11-02",
+      "label": "Mon Nov 2",
+      "with": "Mom",
+      "entries": []
+    },
+    {
+      "date": "2026-11-03",
+      "label": "Tue Nov 3",
+      "with": "Mom",
+      "entries": [
+        {
+          "id": "emma-2026-11-03-dance-class",
+          "title": "Dance class",
+          "date": "2026-11-03",
+          "start": "2026-11-03T17:00:00-05:00",
+          "end": "2026-11-03T18:00:00-05:00",
+          "time_label": "5:00 PM\u20136:00 PM",
+          "place": "Downtown Studio",
+          "big": true,
+          "changed": true,
+          "changed_note": "Pickup: Grandma",
+          "legs": [
+            {
+              "kind": "pickup",
+              "driver": "Grandma",
+              "time_label": "6:00 PM"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-11-04",
+      "label": "Wed Nov 4",
+      "with": "Mom",
+      "entries": []
+    },
+    {
+      "date": "2026-11-05",
+      "label": "Thu Nov 5",
+      "with": "Mom",
+      "entries": [
+        {
+          "id": "emma-2026-11-05-book-club",
+          "title": "Book club",
+          "date": "2026-11-05",
+          "start": "2026-11-05T15:30:00-05:00",
+          "end": "2026-11-05T16:30:00-05:00",
+          "time_label": "3:30 PM\u20134:30 PM",
+          "place": "Public Library",
+          "big": true,
+          "changed": false,
+          "changed_note": null,
+          "legs": []
+        }
+      ]
+    },
+    {
+      "date": "2026-11-06",
+      "label": "Fri Nov 6",
+      "with": "Mom",
+      "entries": []
+    },
+    {
+      "date": "2026-11-07",
+      "label": "Sat Nov 7",
+      "with": "Mom",
+      "entries": []
+    },
+    {
+      "date": "2026-11-08",
+      "label": "Sun Nov 8",
+      "with": "Mom",
+      "entries": []
+    },
+    {
+      "date": "2026-11-09",
+      "label": "Mon Nov 9",
+      "with": "Mom",
+      "entries": []
+    },
+    {
+      "date": "2026-11-10",
+      "label": "Tue Nov 10",
+      "with": "Mom",
+      "entries": []
+    },
+    {
+      "date": "2026-11-11",
+      "label": "Wed Nov 11",
+      "with": "Mom",
+      "entries": []
+    }
+  ]
+}

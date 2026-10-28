@@ -1,0 +1,167 @@
+{
+  "kid": "Noah",
+  "generated_at": "2026-10-29T09:00:00-04:00",
+  "window": {
+    "start": "2026-10-29",
+    "end": "2026-11-11"
+  },
+  "days": [
+    {
+      "date": "2026-10-29",
+      "label": "Thu Oct 29",
+      "with": "Mom",
+      "entries": []
+    },
+    {
+      "date": "2026-10-30",
+      "label": "Fri Oct 30",
+      "with": "Mom",
+      "entries": [
+        {
+          "id": "noah-2026-10-30-robotics-club",
+          "title": "Robotics club",
+          "date": "2026-10-30",
+          "start": "2026-10-30T15:15:00-04:00",
+          "end": "2026-10-30T16:45:00-04:00",
+          "time_label": "3:15 PM\u20134:45 PM",
+          "place": "Middle School",
+          "big": true,
+          "changed": false,
+          "changed_note": null,
+          "legs": [
+            {
+              "kind": "pickup",
+              "driver": "Dad",
+              "time_label": "4:45 PM"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-10-31",
+      "label": "Sat Oct 31",
+      "with": "Dad",
+      "entries": []
+    },
+    {
+      "date": "2026-11-01",
+      "label": "Sun Nov 1",
+      "with": "Dad",
+      "entries": [
+        {
+          "id": "noah-2026-11-01-soccer-game",
+          "title": "Soccer game",
+          "date": "2026-11-01",
+          "start": "2026-11-01T10:00:00-05:00",
+          "end": "2026-11-01T11:30:00-05:00",
+          "time_label": "10:00 AM\u201311:30 AM",
+          "place": "Riverside Park",
+          "big": true,
+          "changed": false,
+          "changed_note": null,
+          "legs": [
+            {
+              "kind": "dropoff",
+              "driver": "Dad",
+              "time_label": "10:00 AM"
+            },
+            {
+              "kind": "pickup",
+              "driver": "Dad",
+              "time_label": "11:30 AM"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "date": "2026-11-02",
+      "label": "Mon Nov 2",
+      "with": "Mom",
+      "entries": []
+    },
+    {
+      "date": "2026-11-03",
+      "label": "Tue Nov 3",
+      "with": "Mom",
+      "entries": []
+    },
+    {
+      "date": "2026-11-04",
+      "label": "Wed Nov 4",
+      "with": "Mom",
+      "entries": [
+        {
+          "id": "noah-2026-11-04-piano-lesson",
+          "title": "Piano lesson",
+          "date": "2026-11-04",
+          "start": "2026-11-04T16:30:00-05:00",
+          "end": "2026-11-04T17:15:00-05:00",
+          "time_label": "4:30 PM\u20135:15 PM",
+          "place": "Maple Street Studio",
+          "big": true,
+          "changed": true,
+          "changed_note": null,
+          "legs": []
+        }
+      ]
+    },
+    {
+      "date": "2026-11-05",
+      "label": "Thu Nov 5",
+      "with": "Mom",
+      "entries": []
+    },
+    {
+      "date": "2026-11-06",
+      "label": "Fri Nov 6",
+      "with": "Mom",
+      "entries": []
+    },
+    {
+      "date": "2026-11-07",
+      "label": "Sat Nov 7",
+      "with": "Mom",
+      "entries": [
+        {
+          "id": "noah-2026-11-07-birthday-party",
+          "title": "Birthday party",
+          "date": "2026-11-07",
+          "start": "2026-11-07T14:00:00-05:00",
+          "end": "2026-11-07T16:00:00-05:00",
+          "time_label": "2:00 PM\u20134:00 PM",
+          "place": "Friend's House",
+          "big": true,
+          "changed": false,
+          "changed_note": null,
+          "legs": []
+        }
+      ]
+    },
+    {
+      "date": "2026-11-08",
+      "label": "Sun Nov 8",
+      "with": "Mom",
+      "entries": []
+    },
+    {
+      "date": "2026-11-09",
+      "label": "Mon Nov 9",
+      "with": "Mom",
+      "entries": []
+    },
+    {
+      "date": "2026-11-10",
+      "label": "Tue Nov 10",
+      "with": "Mom",
+      "entries": []
+    },
+    {
+      "date": "2026-11-11",
+      "label": "Wed Nov 11",
+      "with": "Mom",
+      "entries": []
+    }
+  ]
+}
