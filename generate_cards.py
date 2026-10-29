@@ -1,38 +1,44 @@
 #!/usr/bin/env python3
-"""Family Cards generator (v1, phase 1).
+"""Family Cards generator — demo edition.
 
-Reads Dad's Google calendars (primary + Family + Kids) via hatch_gws_cli
-and writes one kid-simple JSON data file per kid (emma.json, noah.json).
+Builds one kid-simple JSON data file per kid (emma.json, noah.json)
+from calendar events. The kids and events in this public demo are
+invented; the card files committed here were written by hand to match
+the schema, and this script shows how such files are produced.
 
-Rules implemented (see GOAL.md):
-- Two-week rolling window (default: today .. today+13 days, America/New_York).
+Rules implemented:
+- Two-week rolling window (default: today .. today+13 days,
+  America/New_York).
 - Each day is framed "With Dad" when a dad-day event ("Dad time" /
-  "Dad's weekend", DAD_RE) covers that date, else "With Mom".
-- Only the kid's own events appear; non-school events are flagged `big`.
-- Pickup / drop-off legs are shown ONLY when the driver resolves to Dad
-  ("Dad"). Driver precedence (Oct 28 enhancement): (1) explicit title tag
-  / manual transport name on the event itself, (2) DRIVER PROOF from a
-  matching travel block on any of the three calendars ("Travel to ..."
-  blocks are parsed for their assigned driver before being filtered out
-  as entries), (3) travel_blocks.py exception lists, (4) dad day ->
-  Mom-day 4:20 PM cutoff rule from decide_kid_driver() ("ask" legs
-  are omitted: the kid's default assumption is Mom). A travel block
-  assigned to Mom is positive proof of Mom (leg absent); block
-  evidence beats the rule, and conflicts are logged to a
-  driver-evidence JSON next to the snapshots.
-- A leg driven by a third party (named in a manual transport title) is an
-  exception: it is shown, names the driver, and carries the CHANGED tag.
-- Entries that differ in time from the previous generated card (snapshot
-  kept outside the repo) get a single CHANGED tag; the new time only is
-  shown. First run: no snapshot exists, so no CHANGED tags are produced
-  except genuine third-party-driver exceptions.
-- Sensitive events (therapy / medical / dental / financial / legal /
-  support-group etc.) are excluded entirely and logged.
-- Output contains NO street addresses, emails, or phone numbers: locations
-  are reduced to a simple place name (school / studio) or a town.
+  "Dad's weekend") covers that date, else "With Mom".
+- Only the kid's own events appear; non-school events are flagged
+  `big`.
+- Pickup / drop-off legs are shown only when the driver resolves to
+  Dad. Driver precedence: (1) an explicit title tag or manual
+  transport name on the event itself, (2) driver evidence from a
+  matching "Travel to ..." block (travel blocks are parsed for their
+  assigned driver before being filtered out as entries), (3)
+  exception lists, (4) the day rule — Dad days resolve to Dad; on
+  Mom days a late-afternoon cutoff decides, and "ask" legs are
+  omitted (the kid's default assumption is Mom). A travel block
+  assigned to Mom is positive proof of Mom, so the leg stays off
+  the card.
+- A leg driven by a third party (named in a manual transport title)
+  is an exception: it is shown, names the driver, and carries the
+  CHANGED tag.
+- Entries that differ in time from the previous generated card
+  (a snapshot kept outside this repo) get a single CHANGED tag;
+  the new time only is shown.
+- Sensitive-category events (therapy / medical / dental / financial /
+  legal / support-group etc.) are excluded entirely.
+- Output contains no street addresses, emails, or phone numbers:
+  locations are reduced to a simple place name or a town.
 
-The page (index.html) never calls any calendar API; it only renders these
-JSON files.
+Calendar IDs come from the environment so no account identifiers
+are ever committed: FAMILY_CARDS_CAL_PRIMARY / _FAMILY / _KIDS.
+
+The page (index.html) never calls any calendar API; it only renders
+these JSON files.
 """
 
 import argparse
@@ -56,7 +62,7 @@ CALENDARS = {
 }
 KIDS = {"emma": "Emma", "noah": "Noah"}
 
-# --- driver logic, mirrored from travel_blocks.py (2026-10-28) -------------
+# --- driver logic -------------------------------------------------------
 DAD_RE = re.compile(r"\bdad(?:'s)?\s+(?:time|weekend)\b", re.I)
 KID_EVENT_RE = re.compile(r"emma|noah|\bkids?\b", re.I)
 TRANSPORT_RE = re.compile(r"^\s*(dad|mom)\s+(drop\s?off|pick\s?up)\b", re.I)
@@ -82,7 +88,7 @@ def named_transport_driver(summary):
 
 
 TITLE_TAG_RE = re.compile(r"-\s*(dad|mom)\s*$", re.I)
-AFTER_HOURS = (16, 20, 0)  # 4:20 PM cutoff on Mom days
+AFTER_HOURS = (16, 20, 0)  # late-afternoon cutoff on Mom days
 PICKUP_MIN_DURATION = timedelta(minutes=60)
 NO_PICKUP_BLOCKS = {("2026-10-14", "noah school career/college")}
 DAD_ONEOFF = {("2026-10-14", "noah school career/college")}
