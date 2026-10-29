@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>My next two weeks</title>
 <style>
   body { font-family: system-ui, sans-serif; margin: 0; background: #fdf8f2;
@@ -52,6 +54,10 @@
              border: 1px solid #ccc; }
   .notebox button { background: #b3541e; color: #fff; border: none;
              font-size: 1.05rem; padding: 10px 22px; border-radius: 999px; }
+  footer { text-align: center; color: #6f6f6f; font-size: .9rem;
+           padding: 0 12px 28px; }
+  footer p { margin: 4px 0; }
+  footer a { color: #b3541e; }
 </style>
 </head>
 <body>
@@ -60,6 +66,10 @@
 <div class="demo-banner" id="demo-banner" style="display:none">Demo — fake kids, fake plans, just for show</div></header>
 <nav class="tabs" id="tabs"></nav>
 <main id="card"></main>
+<footer>
+  <p>© 2026 Andrew Horowitz · <a href="mailto:hello@andrewdhorowitz.com">Contact</a></p>
+  <p>Built by Andrew Horowitz with Muse · Part of <a href="https://andrewdhorowitz.com/">andrewdhorowitz.com</a></p>
+</footer>
 <script>
 let cards = {};                                // slug -> data (all from JSON)
 
