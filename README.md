@@ -6,6 +6,8 @@ Public demo of the Family Cards page using the same code as the private
 live version, with fully invented kids ("Emma" / "Noah") and invented
 events. Nothing here is real family data.
 
+> **Published:** Demo — https://andrewdhorowitz.github.io/family-cards-demo/ · Interactive — https://andrewdhorowitz.github.io/family-cards-demo/docs/interactive-architecture.html · Repo — https://github.com/andrewdhorowitz/family-cards-demo
+
 **See it:** https://andrewdhorowitz.github.io/family-cards-demo/ —
 the demo's home is GitHub Pages (static hosting under the
 `/family-cards-demo/` subpath). No code or sign-in is needed there:
