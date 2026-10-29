@@ -1,5 +1,7 @@
 # Family Cards — DEMO (fake data only)
 
+[![CI](https://github.com/andrewdhorowitz/family-cards-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/andrewdhorowitz/family-cards-demo/actions/workflows/ci.yml) [![Tests](https://github.com/andrewdhorowitz/family-cards-demo/actions/workflows/tests.yml/badge.svg)](https://github.com/andrewdhorowitz/family-cards-demo/actions/workflows/tests.yml) [![Smoke](https://github.com/andrewdhorowitz/family-cards-demo/actions/workflows/smoke.yml/badge.svg)](https://github.com/andrewdhorowitz/family-cards-demo/actions/workflows/smoke.yml) [![Lighthouse](https://github.com/andrewdhorowitz/family-cards-demo/actions/workflows/lighthouse.yml/badge.svg)](https://github.com/andrewdhorowitz/family-cards-demo/actions/workflows/lighthouse.yml) [![Links](https://github.com/andrewdhorowitz/family-cards-demo/actions/workflows/links.yml/badge.svg)](https://github.com/andrewdhorowitz/family-cards-demo/actions/workflows/links.yml)
+
 Public demo of the Family Cards page using the same code as the private
 live version, with fully invented kids ("Emma" / "Noah") and invented
 events. Nothing here is real family data.
