@@ -15,6 +15,14 @@ This file is the canonical diagram source. It renders natively on GitHub,
 and the same Mermaid source feeds the showcase site — there is no second,
 hand-maintained copy.
 
+**Canonical pattern (v3, adopted Oct 28, 2026):** three views — System
+Context (L1), Container (L2), and a Deployment / host view — with
+shapes keyed to the kind of thing (see the legend under the Deployment
+view) and hosts drawn as their own deployment nodes. An interactive,
+draggable rendering of the Deployment view lives beside this file at
+[docs/interactive-architecture.html](interactive-architecture.html):
+dragging there explores the view and never changes this source.
+
 ## Level 1 — System Context (inset)
 
 Who uses Family Cards, and which outside systems it touches.
@@ -109,6 +117,78 @@ C4Container
     UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
 ```
 
+## Deployment — Host view (v3)
+
+Where each container actually runs. Every host is its own deployment
+node, in its own colour in the interactive rendering: **GitHub**
+(repository hosting), **Cloudflare Pages** (edge hosting), **Muse —
+assistant side** (automation runtime, off the web host), and **Google**
+(external services). People stand outside every host.
+
+```mermaid
+C4Deployment
+    title Family Cards - Deployment View (demo: Emma / Noah)
+
+    Person(kid, "Emma / Noah", "Kid viewers. Each reads only their own card.")
+    Person(owner, "Dad", "Owner. Reads both cards, tabbed.")
+    Person(parent, "Parent viewer", "Read-only. Reads both cards.")
+
+    Deployment_Node(github, "GitHub", "Repository hosting") {
+        Container(repo, "Family Cards Demo Repo", "Git repository", "Canonical source: page, gate, generator, this diagram. Plus the generated card data.")
+    }
+
+    Deployment_Node(cloudflare, "Cloudflare Pages", "Edge hosting") {
+        Container(page, "Card Page", "Static HTML / JavaScript - UI screen", "Renders one kid card, or both with tabs. Shows Big and CHANGED tags and the notes box.")
+        Container(gate, "Gate Middleware", "Pages Function - server", "Redeems codes against stored hashes, sets a signed scoped cookie, enforces scope, serves scope, handles the note endpoint.")
+        ContainerDb(carddata, "Per-kid Card Data", "JSON files", "emma.json and noah.json. One file per kid, own notes only.")
+        ContainerDb(codes, "Access Code Hashes", "JSON file", "SHA-256 hashes and expiries only.")
+    }
+
+    Deployment_Node(muse, "Muse - assistant side", "Automation runtime, off the web host") {
+        Container(gen, "Card Generator", "Python - worker", "Reads calendars, filters, resolves drivers, applies Big and CHANGED, folds notes, writes per-kid JSON.")
+        Container(minter, "Code Minter", "Python - worker", "Mints expiring scoped codes. Only hashes are committed.")
+        Container(watch, "Notes Watch and Scheduled Rebuilds", "Scheduled jobs - workers", "Morning and nightly rebuilds, on-change rebuilds, new-note alerts to Dad.")
+        ContainerDb(snap, "Snapshots and Notes State", "Files, outside the repo", "CHANGED diff baseline. Seen-note IDs for dedupe.")
+    }
+
+    Deployment_Node(google, "Google", "External services") {
+        Container_Ext(cal, "Google Calendar", "External service - cloud", "Source calendars, read on the assistant side only.")
+        Container_Ext(form, "Google Form", "External service - cloud", "Kid-notes inbox. Full flow only; stubbed in the demo.")
+    }
+
+    Rel(kid, gate, "Opens coded link, then browses with cookie", "HTTPS")
+    Rel(owner, gate, "Opens owner link", "HTTPS")
+    Rel(parent, gate, "Opens parent link", "HTTPS")
+    Rel(gate, page, "Allows the verified scope")
+    Rel(gate, codes, "Reads hashes and expiry")
+    Rel(page, carddata, "Fetches card JSON by scope")
+    Rel(page, gate, "Posts a note to the note endpoint", "Demo: box disabled")
+    Rel(gate, form, "Forwards the attributed note", "Full flow only")
+    Rel(watch, form, "Polls new note responses")
+    Rel(watch, gen, "New note: alert Dad, then regenerate")
+    Rel(gen, cal, "Reads events, rolling two-week window")
+    BiRel(gen, snap, "Diff drives CHANGED tags")
+    Rel(gen, carddata, "Writes per-kid JSON")
+    Rel(minter, codes, "Writes hashes only")
+    Rel(gen, repo, "Pushes generated card data")
+    Rel(minter, repo, "Pushes updated hashes")
+    Rel(repo, page, "Deploys page, gate, and data to Cloudflare")
+
+    UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="1")
+```
+
+### Shape and host legend
+
+| Visual | Means | Family Cards examples |
+|---|---|---|
+| Person figure | A human user | Emma / Noah, Dad, Parent viewer |
+| Browser window | A user screen / UI | Card Page |
+| Server rack | A server / server-side function | Gate Middleware, Note Endpoint |
+| Gear | A worker / background or scheduled job | Card Generator, Code Minter, Notes Watch, Scheduled Rebuilds |
+| Cylinder | A database / data store | Per-kid Card Data, Access Code Hashes, Snapshots and Notes State |
+| Cloud | An external hosted service | Google Calendar, Google Form |
+| Repository | A source / code store | GitHub repo |
+
 ## The three flows
 
 **1. Publishing a card (push, never pull).** The page never calls a
@@ -147,15 +227,15 @@ discards the submission.
 
 | Container | Shape in diagram | Runs on | Responsibility |
 |---|---|---|---|
-| Card Page | Box - UI page | Cloudflare Pages (static) | Render one card, or both with tabs; Big / CHANGED display; note box |
-| Gate Middleware | Box - server function | Cloudflare Pages Function | Code redemption, signed scoped cookies, per-file scope enforcement, `/scope.json`, `/note` |
-| Note Endpoint | Box - server route | In the gate (`/note`) | Attribute from the cookie, validate, forward (stub in demo) |
+| Card Page | Browser window - UI screen | Cloudflare Pages (static) | Render one card, or both with tabs; Big / CHANGED display; note box |
+| Gate Middleware | Server rack - server function | Cloudflare Pages Function | Code redemption, signed scoped cookies, per-file scope enforcement, `/scope.json`, `/note` |
+| Note Endpoint | Server rack - server route | In the gate (`/note`) | Attribute from the cookie, validate, forward (stub in demo) |
 | Per-kid Card Data | Cylinder - data store | Static JSON in this repo | The only thing the page renders; one file per kid |
 | Access Code Hashes | Cylinder - data store | Static JSON in this repo | Hashes and expiries for scoped codes; nothing plain |
-| Card Generator | Box - server / batch process | Assistant side (Python) | Calendars in, per-kid JSON out; all card rules live here |
-| Code Minter | Box - process | Assistant side (Python) | Mint expiring scoped codes; commit hashes only |
-| Scheduled Rebuilds and Watches | Box - scheduled job | Assistant side (scheduled jobs) | Morning / nightly / on-change regeneration triggers |
-| Notes Watch | Box - scheduled job | Assistant side (scheduled job) | New-note alerts to Dad, then regeneration (full flow only) |
+| Card Generator | Gear - worker | Assistant side (Python) | Calendars in, per-kid JSON out; all card rules live here |
+| Code Minter | Gear - worker | Assistant side (Python) | Mint expiring scoped codes; commit hashes only |
+| Scheduled Rebuilds and Watches | Gear - scheduled worker | Assistant side (scheduled jobs) | Morning / nightly / on-change regeneration triggers |
+| Notes Watch | Gear - scheduled worker | Assistant side (scheduled job) | New-note alerts to Dad, then regeneration (full flow only) |
 | Snapshots and Notes State | Cylinder - data store | Assistant side (files, outside the repo) | CHANGED diff baseline; note dedupe |
 
 ## Demo vs private

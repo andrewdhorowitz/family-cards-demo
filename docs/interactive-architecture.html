@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Family Cards — Architecture (interactive)</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; background: #fdf8f2; color: #222; }
+  header { padding: 14px 18px 6px; }
+  h1 { font-size: 1.35rem; margin: 0 0 4px; }
+  p.sub { color: #555; margin: 0 0 8px; max-width: 110ch; }
+  .toolbar { padding: 0 18px 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .toolbar button { font-size: .95rem; padding: 6px 14px; border-radius: 999px; border: 1.5px solid #888; background: #fff; cursor: pointer; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 0 18px 10px; font-size: .9rem; color: #333; }
+  .legend b { font-weight: 600; }
+  #wrap { display: flex; gap: 0; }
+  #viewport { flex: 1; height: 72vh; min-height: 520px; overflow: hidden; position: relative; background: #fffdf9; border-top: 1px solid #e5ddd2; border-bottom: 1px solid #e5ddd2; cursor: grab; touch-action: none; }
+  #viewport.grabbing { cursor: grabbing; }
+  #world { position: absolute; left: 0; top: 0; width: 1780px; height: 1160px; transform-origin: 0 0; }
+  svg#edges { position: absolute; left: 0; top: 0; width: 1780px; height: 1160px; overflow: visible; }
+  .zone { position: absolute; border: 2.5px solid; border-radius: 18px; padding: 10px; }
+  .zone .ztitle { font-weight: 700; font-size: 1.05rem; }
+  .zone .zsub { font-size: .85rem; color: #444; }
+  .zone.github { border-color: #24292f; background: rgba(36,41,47,.05); }
+  .zone.cloudflare { border-color: #f48120; background: rgba(244,129,32,.07); }
+  .zone.muse { border-color: #7c3aed; background: rgba(124,58,237,.06); }
+  .zone.google { border-color: #1a73e8; background: rgba(26,115,232,.06); }
+  .zone.people { border-color: #08427b; background: rgba(8,66,123,.05); }
+  .node { position: absolute; width: 220px; min-height: 92px; padding: 10px 12px; background: #fff; border: 2px solid #1168bd; border-radius: 12px; cursor: grab; user-select: none; -webkit-user-select: none; touch-action: none; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+  .node:active { cursor: grabbing; }
+  .node.selected { outline: 3px solid #b3541e; outline-offset: 2px; }
+  .node .icon { font-size: 1.35rem; }
+  .node .t { font-weight: 700; font-size: 1rem; }
+  .node .k { font-size: .8rem; color: #555; text-transform: uppercase; letter-spacing: .04em; }
+  .node.person { border-radius: 46px; text-align: center; background: #eaf2fb; border-color: #08427b; }
+  .node.db { border-radius: 110px / 26px; background: #eef6ff; padding-top: 16px; }
+  .node.ui { border-radius: 8px; background: #fff; }
+  .node.ui .bar { height: 14px; border-bottom: 1.5px solid #ccc; margin: -4px -4px 6px; font-size: .65rem; color: #999; letter-spacing: 2px; }
+  .node.server { background: repeating-linear-gradient(to bottom, #fff 0 26px, #f2f5f9 26px 28px); }
+  .node.worker { border-style: dashed; background: #f7f2ff; border-color: #7c3aed; }
+  .node.cloud { border-radius: 52px; background: #eef4fd; border-color: #1a73e8; text-align: center; }
+  .node.repo { background: #f4f4f5; border-color: #24292f; }
+  #panel { width: 320px; max-width: 38vw; padding: 14px 16px; border-left: 1px solid #e5ddd2; background: #fff; }
+  #panel h2 { font-size: 1.1rem; margin: 0 0 6px; }
+  #panel .meta { color: #555; font-size: .9rem; margin-bottom: 8px; }
+  #panel p { line-height: 1.45; }
+  footer { padding: 10px 18px 20px; color: #555; font-size: .9rem; max-width: 110ch; }
+  @media (max-width: 800px) { #wrap { flex-direction: column; } #panel { width: auto; max-width: none; border-left: none; border-top: 1px solid #e5ddd2; } }
+</style></head><body>
+<header>
+  <h1>Family Cards — Architecture, interactive</h1>
+  <p class="sub">Richer shapes + host view. <b>Drag any box</b> to move it, <b>drag the background</b> to pan, <b>scroll / pinch buttons</b> to zoom, <b>click a box</b> for its details. Dragging explores the view — it does not change the canonical source (docs/architecture.md in this repo). Demo only: Emma / Noah.</p>
+</header>
+<div class="toolbar">
+  <button id="zin" type="button">Zoom +</button>
+  <button id="zout" type="button">Zoom −</button>
+  <button id="zreset" type="button">Reset view &amp; layout</button>
+</div>
+<div class="legend">
+  <span>👤 <b>Person</b></span><span>🪟 <b>Browser window</b> = UI screen</span><span>🗄️ <b>Rack</b> = server</span><span>⚙️ <b>Gear</b> = worker / job</span><span>🛢️ <b>Cylinder</b> = database / store</span><span>☁️ <b>Cloud</b> = external service</span><span>📦 <b>Repo</b> = source store</span>
+  <span>| Hosts: <b style="color:#24292f">GitHub</b> · <b style="color:#f48120">Cloudflare</b> · <b style="color:#7c3aed">Muse</b> · <b style="color:#1a73e8">Google</b></span>
+</div>
+<div id="wrap">
+  <div id="viewport"><div id="world">
+    <svg id="edges"></svg>
+    <div class="zone people" style="left:10px;top:40px;width:250px;height:560px"><div class="ztitle">People</div><div class="zsub">Outside every host</div></div>
+    <div class="zone github" style="left:290px;top:40px;width:380px;height:250px"><div class="ztitle">GitHub</div><div class="zsub">Repository hosting</div></div>
+    <div class="zone cloudflare" style="left:290px;top:330px;width:700px;height:330px"><div class="ztitle">Cloudflare Pages</div><div class="zsub">Edge hosting — the gated site lives here</div></div>
+    <div class="zone muse" style="left:290px;top:700px;width:700px;height:330px"><div class="ztitle">Muse — assistant side</div><div class="zsub">Automation runtime, off the web host</div></div>
+    <div class="zone google" style="left:1030px;top:40px;width:400px;height:620px"><div class="ztitle">Google</div><div class="zsub">External services</div></div>
+  </div></div>
+  <aside id="panel">
+    <h2 id="ptitle">How to read this</h2>
+    <div class="meta" id="pmeta">Shape = what kind of thing it is · Zone = which host runs it</div>
+    <p id="pbody">Every container from the approved v2 is here, re-drawn by type and placed on its real host. The Card Page is a <b>screen</b>, the Gate is a <b>server</b>, the Generator / Minter / watches are <b>workers</b>, the JSON files are <b>cylinders</b>, and Google's two services are <b>clouds</b>. Click any box for its job.</p>
+  </aside>
+</div>
+<footer>This page is the interactive rendering of the canonical v3 diagram in docs/architecture.md (same folder) — the Mermaid source there is the source of truth, and this rendering is generated from the same model. The demo's note flow is the designed full flow; in the demo repo the note box is disabled and the endpoint is a stub.</footer>
+<script>
+const NODES = [
+ {id:"kid", x:25, y:120, cls:"person", icon:"👤", t:"Emma / Noah", k:"Person — kid viewers", host:"People", body:"Each kid reads only their own card, and can send a note from it. Access is by a coded link, not an account."},
+ {id:"owner", x:25, y:290, cls:"person", icon:"👤", t:"Dad", k:"Person — owner", host:"People", body:"Reads both cards with tabs. Mints the access codes (via the Minter) and receives new-note alerts."},
+ {id:"parent", x:25, y:460, cls:"person", icon:"👤", t:"Parent viewer", k:"Person — read-only", host:"People", body:"Reads both cards, logistics only, with a parent-scoped code."},
+ {id:"repo", x:370, y:120, cls:"repo", icon:"📦", t:"Family Cards Demo Repo", k:"Repo — source store", host:"GitHub", body:"Canonical source: page, gate, generator, and the architecture diagram — plus the generated card data the workers push."},
+ {id:"page", x:330, y:420, cls:"ui", icon:"🪟", t:"Card Page", k:"UI screen — static HTML / JS", host:"Cloudflare Pages", body:"The only thing a reader ever sees. Renders one kid card, or both with tabs for owner / parent. Shows Big and CHANGED tags and the notes box. It never calls a calendar API."},
+ {id:"gate", x:600, y:420, cls:"server", icon:"🗄️", t:"Gate Middleware", k:"Server — Pages Function", host:"Cloudflare Pages", body:"Checks every request: redeems a code against stored hashes, sets a signed scoped cookie, enforces scope per file, answers the scope check, and handles the note endpoint. Fails closed."},
+ {id:"carddata", x:330, y:545, cls:"db", icon:"🛢️", t:"Per-kid Card Data", k:"Database — JSON files", host:"Cloudflare Pages (static files)", body:"emma.json and noah.json — one file per kid: two-week window, With Dad / With Mom days, entries, legs, CHANGED tags, and that kid's own notes only."},
+ {id:"codes", x:600, y:545, cls:"db", icon:"🛢️", t:"Access Code Hashes", k:"Database — JSON file", host:"Cloudflare Pages (static files)", body:"codes.json holds SHA-256 hashes and expiries only. Plain codes are never stored anywhere in the system."},
+ {id:"gen", x:330, y:790, cls:"worker", icon:"⚙️", t:"Card Generator", k:"Worker — Python", host:"Muse, assistant side", body:"The engine. Reads the calendars, drops sensitive and admin events, frames With Dad / With Mom, resolves drivers, applies Big and CHANGED, folds in kid notes, and writes the per-kid JSON."},
+ {id:"minter", x:600, y:790, cls:"worker", icon:"⚙️", t:"Code Minter", k:"Worker — Python", host:"Muse, assistant side", body:"Mints random per-scope expiring codes in batches. Only the hashes are committed to the repo."},
+ {id:"watch", x:330, y:920, cls:"worker", icon:"⚙️", t:"Notes Watch + Rebuilds", k:"Worker — scheduled jobs", host:"Muse, assistant side", body:"Morning and nightly rebuilds, rebuilds when a change is spotted, and the notes watch: poll the form, alert Dad verbatim on a new note, then regenerate."},
+ {id:"snap", x:600, y:920, cls:"db", icon:"🛢️", t:"Snapshots + Notes State", k:"Database — files, outside repo", host:"Muse, assistant side", body:"The previous card per kid (the CHANGED diff baseline and the Last changed stamp) and the seen-note IDs used to dedupe form responses."},
+ {id:"cal", x:1095, y:150, cls:"cloud", icon:"☁️", t:"Google Calendar", k:"External service — cloud", host:"Google", body:"The source calendars (generic labels: Primary, Family, Kids). Read only on the assistant side — no calendar credential ever lives on the web host."},
+ {id:"form", x:1095, y:330, cls:"cloud", icon:"☁️", t:"Google Form", k:"External service — cloud", host:"Google", body:"The kid-notes inbox in the full flow: notes land as form responses, never linked publicly. In the demo this is stubbed — the box is disabled and nothing is forwarded."}
+];
+const EDGES = [
+ ["kid","gate","coded link, then cookie"],["owner","gate","owner link"],["parent","gate","parent link"],
+ ["gate","page","allows scope"],["gate","codes","checks hash + expiry"],["page","carddata","fetches JSON by scope"],
+ ["page","gate","POST /note"],["gate","form","forwards note (full flow)"],
+ ["watch","form","polls new notes"],["watch","gen","alert + regenerate"],["gen","cal","reads events"],
+ ["gen","snap","CHANGED diff"],["gen","carddata","writes per-kid JSON"],["minter","codes","hashes only"],
+ ["gen","repo","pushes card data"],["minter","repo","pushes hashes"],["repo","page","deploys"]
+];
+const world = document.getElementById('world'), svg = document.getElementById('edges'), vp = document.getElementById('viewport');
+let scale = 0.62, panX = 10, panY = 10;
+const pos = {}; NODES.forEach(n => pos[n.id] = {x:n.x, y:n.y});
+const els = {};
+function applyTransform(){ world.style.transform = `translate(${panX}px,${panY}px) scale(${scale})`; }
+NODES.forEach(n => {
+  const d = document.createElement('div');
+  d.className = 'node ' + n.cls; d.style.left = n.x+'px'; d.style.top = n.y+'px'; d.dataset.id = n.id;
+  d.innerHTML = (n.cls==='ui' ? '<div class="bar">● ● ●</div>' : '') +
+    `<span class="icon">${n.icon}</span> <span class="t">${n.t}</span><div class="k">${n.k}</div>`;
+  world.appendChild(d); els[n.id] = d;
+  let drag = null, moved = false;
+  d.addEventListener('pointerdown', e => { e.stopPropagation(); d.setPointerCapture(e.pointerId); drag = {dx:(e.clientX/scale)-pos[n.id].x, dy:(e.clientY/scale)-pos[n.id].y}; moved = false; });
+  d.addEventListener('pointermove', e => { if(!drag) return; const nx = (e.clientX/scale)-drag.dx, ny = (e.clientY/scale)-drag.dy; if (Math.abs(nx-pos[n.id].x)+Math.abs(ny-pos[n.id].y) > 2) moved = true; pos[n.id] = {x:nx, y:ny}; d.style.left = nx+'px'; d.style.top = ny+'px'; drawEdges(); });
+  d.addEventListener('pointerup', () => { if(drag && !moved) select(n); drag = null; });
+});
+function center(id){ const p = pos[id], el = els[id]; return {x:p.x + el.offsetWidth/2, y:p.y + el.offsetHeight/2}; }
+function drawEdges(){
+  svg.innerHTML = '';
+  const NS = 'http://www.w3.org/2000/svg';
+  EDGES.forEach(([a,b,label]) => {
+    const p1 = center(a), p2 = center(b);
+    const line = document.createElementNS(NS,'line');
+    line.setAttribute('x1',p1.x); line.setAttribute('y1',p1.y); line.setAttribute('x2',p2.x); line.setAttribute('y2',p2.y);
+    line.setAttribute('stroke','#999'); line.setAttribute('stroke-width','2');
+    const tt = document.createElementNS(NS,'title'); tt.textContent = label; line.appendChild(tt); svg.appendChild(line);
+    const tx = document.createElementNS(NS,'text');
+    tx.setAttribute('x',(p1.x+p2.x)/2); tx.setAttribute('y',(p1.y+p2.y)/2 - 4); tx.setAttribute('text-anchor','middle');
+    tx.setAttribute('font-size','13'); tx.setAttribute('fill','#666'); tx.textContent = label; svg.appendChild(tx);
+  });
+}
+function select(n){
+  document.querySelectorAll('.node').forEach(x => x.classList.remove('selected'));
+  els[n.id].classList.add('selected');
+  document.getElementById('ptitle').textContent = n.icon + ' ' + n.t;
+  document.getElementById('pmeta').textContent = n.k + ' · Host: ' + n.host;
+  document.getElementById('pbody').textContent = n.body;
+}
+let pan = null;
+vp.addEventListener('pointerdown', e => { if(e.target.closest('.node')) return; pan = {x:e.clientX-panX, y:e.clientY-panY}; vp.classList.add('grabbing'); });
+vp.addEventListener('pointermove', e => { if(!pan) return; panX = e.clientX-pan.x; panY = e.clientY-pan.y; applyTransform(); });
+vp.addEventListener('pointerup', () => { pan = null; vp.classList.remove('grabbing'); });
+vp.addEventListener('wheel', e => { e.preventDefault(); scale = Math.min(1.6, Math.max(0.3, scale * (e.deltaY < 0 ? 1.08 : 0.93))); applyTransform(); }, {passive:false});
+document.getElementById('zin').onclick = () => { scale = Math.min(1.6, scale*1.15); applyTransform(); };
+document.getElementById('zout').onclick = () => { scale = Math.max(0.3, scale*0.87); applyTransform(); };
+document.getElementById('zreset').onclick = () => { NODES.forEach(n => { pos[n.id] = {x:n.x, y:n.y}; els[n.id].style.left = n.x+'px'; els[n.id].style.top = n.y+'px'; }); scale = 0.62; panX = 10; panY = 10; applyTransform(); drawEdges(); };
+applyTransform(); drawEdges();
+</script>
+</body></html>
