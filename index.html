@@ -34,6 +34,9 @@
   .time, .place, .leg { font-size: 1rem; margin-top: 2px; }
   .leg { font-weight: 600; }
   .quiet { color: #666; padding: 6px 0; }
+  .demo-banner { background: #b3541e; color: #fff; font-weight: 700;
+                 border-radius: 999px; padding: 4px 14px; font-size: .95rem;
+                 max-width: 420px; margin: 8px auto 0; }
   .updated { color: #888; font-size: .85rem; margin-top: 2px; }
   .updated-item { color: #888; font-size: .8rem; margin-left: 6px; }
   .notebox { background: #fff7ea; border: 2px dashed #b3541e;
@@ -53,7 +56,8 @@
 </head>
 <body>
 <header><h1 id="heading">My next two weeks</h1>
-<div class="updated" id="updated"></div></header>
+<div class="updated" id="updated"></div>
+<div class="demo-banner" id="demo-banner" style="display:none">Demo — fake kids, fake plans, just for show</div></header>
 <nav class="tabs" id="tabs"></nav>
 <main id="card"></main>
 <script>
@@ -112,20 +116,23 @@ const demoNoteBoxHtml = `<section class="notebox">
   <p style="margin-top:8px"><strong>Demo — notes are turned off here.</strong></p>
 </section>`;
 async function load() {
-  // The auth gate (Phase 2) tells us who is looking: a kid scope sees
-  // only her own card; parent/owner see every card with tabs.
-  const scopeResp = await fetch("/scope.json");
-  if (!scopeResp.ok) {
-    document.getElementById("card").innerHTML =
-      '<div class="quiet">This link has expired — ask Dad for a new one.</div>';
-    return;
-  }
-  const { scope } = await scopeResp.json();
-  if (scope !== "parent" && scope !== "owner") {
+  // Where a gate runs (Cloudflare), it tells us who is looking via
+  // scope.json: a kid scope sees only her own card; parent/owner see
+  // every card with tabs. On plain static hosting (GitHub Pages) there
+  // is no gate and scope.json is absent — the demo then runs OPEN:
+  // both cards with tabs, no code needed. All fetches are relative so
+  // the page works under a subpath like /family-cards-demo/.
+  let scope = null;
+  try {
+    const scopeResp = await fetch("scope.json");
+    if (scopeResp.ok) ({ scope } = await scopeResp.json());
+  } catch (e) { /* no gate answering on this host */ }
+  if (scope && scope !== "parent" && scope !== "owner") {
     const data = await (await fetch(scope + ".json")).json();
     render(data);
     return;
   }
+  if (!scope) document.getElementById("demo-banner").style.display = "block";
   const manifest = await (await fetch("manifest.json")).json();
   for (const file of manifest.cards) {
     cards[file.replace(".json", "")] = await (await fetch(file)).json();

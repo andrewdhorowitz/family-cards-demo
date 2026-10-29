@@ -4,9 +4,16 @@ Public demo of the Family Cards page using the same code as the private
 live version, with fully invented kids ("Emma" / "Noah") and invented
 events. Nothing here is real family data.
 
-- What the page shows is decided by the access code's scope (see
-  Phase 2 below): a kid scope renders only her own card; the demo's
-  `owner` scope renders both cards with tabs.
+**See it:** https://andrewdhorowitz.github.io/family-cards-demo/ —
+the demo's home is GitHub Pages (static hosting under the
+`/family-cards-demo/` subpath). No code or sign-in is needed there:
+with no gate answering, the page runs in open demo mode and shows both
+cards with tabs, under a "Demo" banner.
+
+- Where a gate does run (the Cloudflare-hosted variant, Phase 2
+  below), what the page shows is decided by the access code's scope:
+  a kid scope renders only her own card; the demo's `owner` scope
+  renders both cards with tabs — the same view the open mode shows.
 - Emma's Nov 3 dance class shows a **CHANGED** tag with a third-party
   pickup ("Pickup: Grandma"); Noah's Nov 4 piano lesson shows a CHANGED
   tag for a moved time (new time only).
@@ -29,7 +36,12 @@ canonical diagram source; it renders natively on GitHub and feeds the
 showcase site, so there is no second hand-maintained copy.
 
 ## Phase 2 — the auth/code gate (demo)
-This demo runs the same gate as the private version:
+On GitHub Pages nothing server-side runs, so the gate below is inert
+there: `functions/` and `codes.json` are plain static files (Jekyll
+doesn't even copy the underscore-prefixed middleware), `codes.json`
+holds only the hash of the public demo code, and the page's fetches
+are all relative so they resolve under the subpath. Where the demo is
+hosted on Cloudflare Pages, it runs the same gate as the private version:
 `functions/_middleware.js` checks every request for a signed
 `fc_auth` cookie (HMAC-SHA256, keyed by the `CODE_SECRET` environment
 variable, which must be set in the hosting project's settings or the
