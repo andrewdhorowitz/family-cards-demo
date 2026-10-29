@@ -47,5 +47,5 @@ test("the note box is present but disabled in demo mode", async ({ page }) => {
   const box = page.locator(".notebox");
   await expect(box).toBeVisible();
   await expect(box.locator("textarea")).toBeDisabled();
-  await expect(box.getByText("Demo — notes are turned off here.")).toBeVisible();
+  await expect(box.getByText("Demo — notes are turned off here; nothing is sent or stored.")).toBeVisible();
 });
