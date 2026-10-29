@@ -1,0 +1,32 @@
+# Lighthouse — backfilled from the repo-template standard (kit v2,
+# 2026-10-28). Installed to .github/workflows/lighthouse.yml by
+# update-ci.sh. The URL below is preset to this demo's public
+# GitHub Pages address.
+#
+# Weekly + on-demand audit with Lighthouse CI, in REPORT-ONLY mode:
+# no assertions are configured, so this workflow never fails a
+# build. The report is uploaded as a run artifact and to temporary
+# public storage (linked from the run summary) for a human to read.
+name: Lighthouse
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 14 * * 1" # Mondays 14:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    name: Lighthouse audit (report-only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Lighthouse CI (report-only)
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: |
+            https://andrewdhorowitz.github.io/family-cards-demo/
+          uploadArtifacts: true
+          temporaryPublicStorage: true

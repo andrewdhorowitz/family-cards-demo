@@ -1,0 +1,34 @@
+# Link check — backfilled from the repo-template standard (kit v2,
+# 2026-10-28). Installed to .github/workflows/links.yml by
+# update-ci.sh.
+#
+# Weekly + on-demand link-rot check (lychee) over every link in the
+# repo's Markdown files. Schedule-only BY DESIGN: it never runs on
+# push or PR, so a rotten external link can't block work — instead
+# the weekly run fails visibly, which is the rot alarm. Loopback /
+# localhost targets and the example.* placeholder domains are
+# excluded; everything else that 404s fails the run.
+name: Links
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 14 * * 1" # Mondays 14:30 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  links:
+    name: Lychee link check (Markdown)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Markdown links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress --exclude-loopback
+            --exclude 'example\.(com|org|net)'
+            './**/*.md'
+          fail: true

@@ -1,0 +1,36 @@
+# Actionlint — standalone workflow lint, backfilled from the
+# repo-template standard (kit v2, 2026-10-28). Installed to
+# .github/workflows/actionlint.yml by update-ci.sh.
+#
+# WHY STANDALONE HERE: in the template, actionlint is a job inside
+# ci.yml. This repo's ci.yml was installed by hand and must not be
+# overwritten, so the same check ships as its own workflow file.
+# The linter is the pinned binary from the official rhysd/actionlint
+# release (v1.7.11), not a third-party wrapper action.
+name: Actionlint
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    name: Lint workflow files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download actionlint (pinned v1.7.11, official release)
+        run: |
+          curl -sSfL -o /tmp/actionlint.tar.gz \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.11/actionlint_1.7.11_linux_amd64.tar.gz
+          tar -xzf /tmp/actionlint.tar.gz -C /tmp actionlint
+      - name: Lint the workflow files
+        run: |
+          if ls .github/workflows/*.yml .github/workflows/*.yaml >/dev/null 2>&1; then
+            /tmp/actionlint -color
+          else
+            echo "No workflow files present — skipping."
+          fi
