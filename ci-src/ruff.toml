@@ -1,0 +1,21 @@
+# Family Cards — ruff baseline, from the modern-standards audit of
+# 2026-10-28. Place at the repo root (next to generate_cards.py).
+# The ignores below are the audit's known style debt, listed on purpose
+# so CI is green today and each one can be dropped as it's cleaned up.
+# NOT ignored: anything that catches real bugs (E9, F-category errors,
+# undefined names, etc.). The unused `import sys` (F401) was removed in
+# the 2026-10-28 fix pass, so its ignore is gone too — CI format and
+# F401 are now fully enforced.
+target-version = "py312"
+
+[lint]
+ignore = [
+    "FURB167", # re.I vs re.IGNORECASE flag aliases, used throughout (style only)
+    "FURB162", # .replace("Z", "+00:00") before fromisoformat — kept deliberately
+    "SIM114",  # if/elif with same arms in the last_changed_at logic (readability choice)
+    "I001",    # generate_cards.py imports os mid-file, after the comment explaining env-based calendar IDs
+    "E402",    # the same deliberate mid-file `import os` as I001 above (found in the 2026-10-28 fix pass — the audit's baseline missed it)
+    "E741",    # ambiguous `l` as the leg variable in the snapshot-diff comprehension in generate_cards.py (style only; found in the 2026-10-28 fix pass)
+    "EXE001",  # shebang present but the executable bit is not preserved by the push pipeline
+    "UP017",   # mint_codes.py spells it datetime.timezone.utc instead of datetime.UTC (equivalent)
+]

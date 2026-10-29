@@ -1,0 +1,160 @@
+# Family Cards (DEMO repo) — CI.
+# Add via GitHub web UI as: .github/workflows/ci.yml
+# Companion files (repo root): cards.schema.json, ruff.toml
+# Checks run AFTER push (no branch locks), per the owner's no-lockout rule.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Python — demo generator & code minter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ruff (pinned to the audited version)
+        run: pip install "ruff==0.15.20"
+      - name: Ruff check (baseline in ruff.toml)
+        run: ruff check generate_cards.py mint_codes.py
+      - name: Byte-compile
+        run: python -m py_compile generate_cards.py mint_codes.py
+      - name: Ruff format
+        run: ruff format --check generate_cards.py mint_codes.py
+
+  web:
+    name: Web — gate middleware & card page
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Syntax-check the middleware (ES module)
+        run: |
+          cp functions/_middleware.js /tmp/_middleware.mjs
+          node --check /tmp/_middleware.mjs
+      - name: Syntax-check the page's inline script
+        run: |
+          python3 - <<'PY'
+          import re, pathlib
+          html = pathlib.Path("index.html").read_text()
+          scripts = re.findall(r"<script>(.*?)</script>", html, re.S)
+          assert scripts, "no inline script found in index.html"
+          for i, s in enumerate(scripts):
+              pathlib.Path(f"/tmp/inline-{i}.js").write_text(s)
+          print(f"extracted {len(scripts)} inline script(s)")
+          PY
+          for f in /tmp/inline-*.js; do node --check "$f"; done
+      - name: Validate HTML (card page; docs/ viz page excluded — known inline-style findings)
+        run: |
+          printf '{ "extends": ["html-validate:recommended"] }' > .htmlvalidate.json
+          npx --yes html-validate@9 index.html
+
+  data:
+    name: Data — card JSON & codes shape
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install jsonschema
+        run: pip install jsonschema
+      - name: Validate manifest + every card it lists
+        run: |
+          python3 - <<'PY'
+          import json, sys
+          from jsonschema import Draft202012Validator
+          schema = json.load(open("cards.schema.json"))
+          manifest_doc = {"$schema": schema["$schema"],
+                          "$ref": "#/$defs/manifest", "$defs": schema["$defs"]}
+          card_v = Draft202012Validator(schema)
+          man_v = Draft202012Validator(manifest_doc)
+          manifest = json.load(open("manifest.json"))
+          errs = list(man_v.iter_errors(manifest))
+          for e in errs:
+              print("manifest.json:", e.message)
+          bad = bool(errs)
+          for fname in manifest.get("cards", []):
+              inst = json.load(open(fname))
+              for e in card_v.iter_errors(inst):
+                  print(f"{fname}: {'/'.join(map(str, e.absolute_path))}: {e.message}")
+                  bad = True
+              else:
+                  print(f"{fname}: checked")
+          sys.exit(1 if bad else 0)
+          PY
+      - name: codes.json holds hashes only, in the expected shape
+        run: |
+          python3 - <<'PY'
+          import json, re
+          entries = json.load(open("codes.json"))
+          assert isinstance(entries, list), "codes.json must be a list"
+          for e in entries:
+              extra = set(e) - {"sha256", "scope", "expires"}
+              assert not extra, f"unexpected keys in codes.json entry: {extra}"
+              assert re.fullmatch(r"[0-9a-f]{64}", e["sha256"]), "sha256 must be 64 hex chars"
+          print(f"codes.json: {len(entries)} hashed entries, shape OK")
+          PY
+
+  sanitization:
+    name: Sanitization — nothing real leaks into the public demo
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # All patterns are GENERIC PII/ID shapes on purpose: a forbidden-names
+      # list committed to this public repo would itself publish the names.
+      # .github is excluded because this workflow file itself contains the
+      # patterns below as literal text (it would otherwise flag itself).
+      - name: No email addresses
+        run: |
+          if grep -rInE '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' --exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=.github .; then
+            echo "::error::An email-shaped string appears in the demo tree"
+            exit 1
+          fi
+      - name: No US phone numbers
+        run: |
+          if grep -rInE '\b[0-9]{3}[-. ][0-9]{3}[-. ][0-9]{4}\b' --exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=.github .; then
+            echo "::error::A phone-number-shaped string appears in the demo tree"
+            exit 1
+          fi
+      - name: No street addresses
+        run: |
+          if grep -rInE '\b[0-9]{1,5} [A-Z][A-Za-z]+ (Ave|Avenue|St|Street|Rd|Road|Dr|Drive|Blvd|Ln|Lane|Ct|Court)\b' --exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=.github .; then
+            echo "::error::A street-address-shaped string appears in the demo tree"
+            exit 1
+          fi
+      - name: No calendar or form IDs
+        run: |
+          if grep -rInE '@group\.calendar\.google\.com|1FAIpQL' --exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=.github .; then
+            echo "::error::A Google calendar-ID or form-ID string appears in the demo tree"
+            exit 1
+          fi
+      - name: No sensitive-service keywords
+        run: |
+          if grep -rInEi 'high focus|creating ?smiles' --exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=.github .; then
+            echo "::error::A sensitive keyword appears in the demo tree"
+            exit 1
+          fi
+      - name: No plain codes, hashes outside codes.json, or secret-shaped keys
+        run: |
+          if grep -rInE '[?&]c=[A-Za-z0-9_-]{8,}' --exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=.github .; then
+            echo "::error::A plain access code appears in a URL"
+            exit 1
+          fi
+          if grep -rInE '\b[0-9a-f]{64}\b' --exclude=codes.json --exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=.github .; then
+            echo "::error::A SHA-256-shaped string appears outside codes.json"
+            exit 1
+          fi
+          if grep -rInE '"(token|secret|password|api_key)"[[:space:]]*:' --include='*.json' --include='*.js' --exclude-dir=.git --exclude-dir=__pycache__ --exclude-dir=.github .; then
+            echo "::error::A secret-shaped key with a value appears in the tree"
+            exit 1
+          fi
