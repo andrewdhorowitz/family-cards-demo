@@ -1,4 +1,6 @@
-// Family Cards — Phase 2 auth/code gate (Cloudflare Pages middleware).
+// Family Cards DEMO — access-code gate (Cloudflare Pages middleware).
+// Demo edition: the codes in codes.json are demo codes for the
+// fictional Emma / Noah cards, minted with mint_codes.py.
 // Runs on EVERY request, including static assets.
 // Access codes arrive as ?c=<token>; only their SHA-256 hashes live in
 // codes.json (imported at build time — no runtime assets fetch, so no
@@ -19,7 +21,7 @@ const EXPIRED_PAGE = `<!DOCTYPE html>
 <title>Link expired</title></head>
 <body style="font-family: system-ui, sans-serif; text-align: center; padding: 48px 20px; background: #fdf8f2; color: #222;">
 <h1 style="font-size: 1.5rem;">This link has expired</h1>
-<p style="font-size: 1.15rem;">Ask Dad for a new one.</p>
+<p style="font-size: 1.15rem;">Whoever shared this demo with you can give you a fresh one.</p>
 </body></html>`;
 
 const FORBIDDEN_PAGE = `<!DOCTYPE html>
@@ -29,7 +31,7 @@ const FORBIDDEN_PAGE = `<!DOCTYPE html>
 <title>Not your card</title></head>
 <body style="font-family: system-ui, sans-serif; text-align: center; padding: 48px 20px; background: #fdf8f2; color: #222;">
 <h1 style="font-size: 1.5rem;">That's not your card</h1>
-<p style="font-size: 1.15rem;">Ask Dad if you need a hand.</p>
+<p style="font-size: 1.15rem;">Use the link that came with your own demo card.</p>
 </body></html>`;
 
 function htmlPage(body, status) {
