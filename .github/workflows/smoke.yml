@@ -6,8 +6,8 @@
 # entries rendering from the checked-in JSON, the CHANGED example,
 # and the disabled demo note box.
 #
-# The live family-cards repo deliberately has NO equivalent: its
-# page is behind an access-code gate a browser test can't pass.
+# A gated deployment can't be smoke-tested this way; this suite
+# exists because the demo runs open on static hosting.
 name: Smoke
 
 on:
