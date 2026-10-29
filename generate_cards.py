@@ -34,11 +34,11 @@ Rules implemented (see GOAL.md):
 The page (index.html) never calls any calendar API; it only renders these
 JSON files.
 """
+
 import argparse
 import json
 import re
 import subprocess
-import sys
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -48,20 +48,39 @@ LOCAL_TZ = ZoneInfo("America/New_York")
 # Calendar IDs come from the environment so no account identifiers are
 # ever committed: FAMILY_CARDS_CAL_PRIMARY / _FAMILY / _KIDS.
 import os
-CALENDARS = {name: os.environ[f"FAMILY_CARDS_CAL_{name.upper()}"]
-             for name in ("primary", "family", "kids")
-             if os.environ.get(f"FAMILY_CARDS_CAL_{name.upper()}")}
+
+CALENDARS = {
+    name: os.environ[f"FAMILY_CARDS_CAL_{name.upper()}"]
+    for name in ("primary", "family", "kids")
+    if os.environ.get(f"FAMILY_CARDS_CAL_{name.upper()}")
+}
 KIDS = {"emma": "Emma", "noah": "Noah"}
 
 # --- driver logic, mirrored from travel_blocks.py (2026-10-28) -------------
 DAD_RE = re.compile(r"\bdad(?:'s)?\s+(?:time|weekend)\b", re.I)
 KID_EVENT_RE = re.compile(r"emma|noah|\bkids?\b", re.I)
-TRANSPORT_RE = re.compile(r"^\s*(dad|mom)\s+(drop\s?off|pick\s?up)\b",
-                          re.I)
-TRANSPORT_ANY_RE = re.compile(
-    r"^\s*(?:(?:dad|mom)\s+)?(drop\s?off|pick\s?up)\b", re.I)
-TRANSPORT_NAMED_RE = re.compile(
-    r"^\s*([A-Za-z]+)\s+(drop\s?off|pick\s?up)\b", re.I)
+TRANSPORT_RE = re.compile(r"^\s*(dad|mom)\s+(drop\s?off|pick\s?up)\b", re.I)
+TRANSPORT_ANY_RE = re.compile(r"^\s*(?:(?:dad|mom)\s+)?(drop\s?off|pick\s?up)\b", re.I)
+TRANSPORT_NAMED_RE = re.compile(r"^\s*([A-Za-z]+)\s+(drop\s?off|pick\s?up)\b", re.I)
+KID_NAMES = frozenset(KIDS)  # lowercase kid keys (emma / noah)
+
+
+def named_transport_driver(summary):
+    """Third-party driver named by a manual transport title ('Grandma
+    pick up ...'), or None. A capture that is a kid's own name is NOT a
+    driver — in 'Noah Pickup' the name is the kid being picked up —
+    so it is discarded here and resolution falls through to the next
+    precedence level (travel-block proof, exceptions, day/cutoff rule).
+    Parent names and the verb itself are likewise not third parties."""
+    m = TRANSPORT_NAMED_RE.match(summary or "")
+    if not m:
+        return None
+    name = m.group(1).lower()
+    if name in ("dad", "mom", "pick", "drop") or name in KID_NAMES:
+        return None
+    return name
+
+
 TITLE_TAG_RE = re.compile(r"-\s*(dad|mom)\s*$", re.I)
 AFTER_HOURS = (16, 20, 0)  # 4:20 PM cutoff on Mom days
 PICKUP_MIN_DURATION = timedelta(minutes=60)
@@ -86,18 +105,15 @@ def decide_kid_driver(ev, leg, leg_dt, dad_dates):
     summary = ev.get("summary") or ""
     named = transport_driver(ev)
     if not KID_EVENT_RE.search(summary) and named is None:
-        m = TRANSPORT_NAMED_RE.match(summary)
-        if m and m.group(1).lower() not in ("pick", "drop"):
-            return m.group(1).lower()
-        return None
+        return named_transport_driver(summary)
     m = TITLE_TAG_RE.search(summary.strip())
     if m:
         return m.group(1).lower()
     if named is not None:
         return named
-    m = TRANSPORT_NAMED_RE.match(summary)
-    if m and m.group(1).lower() not in ("dad", "mom", "pick", "drop"):
-        return m.group(1).lower()
+    named3 = named_transport_driver(summary)
+    if named3 is not None:
+        return named3
     try:
         ev_date = parse_dt(ev["start"]).date().isoformat()
     except (KeyError, ValueError):
@@ -119,7 +135,8 @@ def decide_kid_driver(ev, leg, leg_dt, dad_dates):
 TRAVEL_BLOCK_RE = re.compile(r"^travel to\s+(.+)$", re.I | re.S)
 SRC_EVENT_RE = re.compile(r"\[src-event:\s*([^\]]+)\]")
 DESC_LEG_DRIVER_RE = re.compile(
-    r"\b(?:pickup|drop-?off|leg)\b[^.]{0,60}?\b(dad|mom)(?:'s)?\b", re.I)
+    r"\b(?:pickup|drop-?off|leg)\b[^.]{0,60}?\b(dad|mom)(?:'s)?\b", re.I
+)
 DESC_FOR_TAG_RE = re.compile(r"-\s*(dad|mom)\s*\.?\s*$", re.I)
 
 
@@ -172,20 +189,33 @@ def parse_travel_block(ev):
         return None
     desc = ev.get("description") or ""
     sm = SRC_EVENT_RE.search(desc)
-    return {"target_norm": normalize_title(target), "leg": leg,
-            "driver": block_driver(ev), "cal": ev.get("_cal"),
-            "summary": summary, "block_start": bstart, "block_end": bend,
-            "src_event": sm.group(1) if sm else None}
+    return {
+        "target_norm": normalize_title(target),
+        "leg": leg,
+        "driver": block_driver(ev),
+        "cal": ev.get("_cal"),
+        "summary": summary,
+        "block_start": bstart,
+        "block_end": bend,
+        "src_event": sm.group(1) if sm else None,
+    }
 
 
 def match_travel_block(blocks, ev, leg, ev_start, ev_end):
     """Find a travel block proving this leg of this event: same
     normalized target title, same date, and the block ends at/near the
     leg time (event start for drop-off, event end for pickup)."""
-    target_norm = normalize_title(ev.get("summary") or "")
+    summary = ev.get("summary") or ""
+    # A standalone pickup event's own title carries the word 'pickup'
+    # ('Noah Pickup'), which block targets have stripped — try the
+    # title both ways so its '- dad' pickup block can prove the leg.
+    target_norms = {
+        normalize_title(summary),
+        normalize_title(re.sub(r"\bpickup\b", "", summary, flags=re.I)),
+    }
     leg_dt = ev_start if leg == "dropoff" else ev_end
     for b in blocks:
-        if b["leg"] != leg or b["target_norm"] != target_norm:
+        if b["leg"] != leg or b["target_norm"] not in target_norms:
             continue
         if b["block_end"].date() != leg_dt.astimezone(LOCAL_TZ).date():
             continue
@@ -204,9 +234,9 @@ def event_explicit_driver(ev):
     named = transport_driver(ev)
     if named is not None:
         return named, "manual-transport"
-    m = TRANSPORT_NAMED_RE.match(summary)
-    if m and m.group(1).lower() not in ("dad", "mom", "pick", "drop"):
-        return m.group(1).lower(), "manual-transport"
+    named3 = named_transport_driver(summary)
+    if named3 is not None:
+        return named3, "manual-transport"
     return None, None
 
 
@@ -224,8 +254,9 @@ def exception_driver(ev, leg, leg_dt):
     return None
 
 
-def resolve_driver(ev, leg, leg_dt, ev_start, ev_end, dad_dates, blocks,
-                   kid, title, evidence_log):
+def resolve_driver(
+    ev, leg, leg_dt, ev_start, ev_end, dad_dates, blocks, kid, title, evidence_log
+):
     """Full precedence: (1) event tag / manual transport, (2) travel
     block proof, (3) exception lists, (4) dad-day / 4:20 PM rule.
     Appends one record per leg to evidence_log; returns the driver."""
@@ -238,27 +269,52 @@ def resolve_driver(ev, leg, leg_dt, ev_start, ev_end, dad_dates, blocks,
     if explicit is not None:
         chosen, source = explicit, explicit_src
         if block_drv and block_drv != explicit:
-            conflict = {"with": "travel-block", "block_driver": block_drv,
-                        "chosen": explicit, "note": "event tag/manual wins"}
+            conflict = {
+                "with": "travel-block",
+                "block_driver": block_drv,
+                "chosen": explicit,
+                "note": "event tag/manual wins",
+            }
     elif block_drv:
         chosen, source = block_drv, "travel-block"
         if fallback != block_drv:
-            conflict = {"with": "rule", "rule_driver": fallback,
-                        "chosen": block_drv, "note": "block wins over rule"}
+            conflict = {
+                "with": "rule",
+                "rule_driver": fallback,
+                "chosen": block_drv,
+                "note": "block wins over rule",
+            }
     elif exc is not None:
         chosen, source = exc, "exception-list"
     else:
         chosen = fallback
-        source = "dad-day" if leg_dt.astimezone(LOCAL_TZ).date().isoformat() \
-            in dad_dates else "cutoff-rule"
-    evidence_log.append({
-        "kid": kid, "event": title,
-        "date": leg_dt.astimezone(LOCAL_TZ).date().isoformat(),
-        "leg": leg, "driver": chosen, "source": source,
-        "block": ({"cal": block["cal"], "summary": block["summary"],
-                   "driver": block_drv, "src_event": block["src_event"]}
-                  if block else None),
-        "rule_driver": fallback, "conflict": conflict})
+        source = (
+            "dad-day"
+            if leg_dt.astimezone(LOCAL_TZ).date().isoformat() in dad_dates
+            else "cutoff-rule"
+        )
+    evidence_log.append(
+        {
+            "kid": kid,
+            "event": title,
+            "date": leg_dt.astimezone(LOCAL_TZ).date().isoformat(),
+            "leg": leg,
+            "driver": chosen,
+            "source": source,
+            "block": (
+                {
+                    "cal": block["cal"],
+                    "summary": block["summary"],
+                    "driver": block_drv,
+                    "src_event": block["src_event"],
+                }
+                if block
+                else None
+            ),
+            "rule_driver": fallback,
+            "conflict": conflict,
+        }
+    )
     return chosen
 
 
@@ -268,19 +324,22 @@ SENSITIVE_RE = re.compile(
     r"doctor|\bdr\b|appointment with dr|dentist|dental|orthodon|"
     r"medical|clinic|hospital|insurance|autopay|bank|"
     r"zelle|payment|legal|court|custody|divorce|attorney|law\b|"
-    r"prescriber|pharmacy|medication", re.I)
+    r"prescriber|pharmacy|medication",
+    re.I,
+)
 SKIP_RE = re.compile(
     r"^(travel to|travel:|get ready|⚠)|\btravel short\b|"
     r"^dad busy|tentative — holding|kid driving plan|"
-    r"birthday$|'s birthday$", re.I)
+    r"birthday$|'s birthday$",
+    re.I,
+)
 SCHOOL_RE = re.compile(r"\bschool\b|school day|classes\b", re.I)
 
 
 def parse_dt(node):
     if "dateTime" in node:
         return datetime.fromisoformat(node["dateTime"].replace("Z", "+00:00"))
-    return datetime.combine(date.fromisoformat(node["date"]),
-                            time.min, LOCAL_TZ)
+    return datetime.combine(date.fromisoformat(node["date"]), time.min, LOCAL_TZ)
 
 
 def fetch_events(cal_id, start, end):
@@ -288,19 +347,24 @@ def fetch_events(cal_id, start, end):
         "calendarId": cal_id,
         "timeMin": start.astimezone(LOCAL_TZ).isoformat(),
         "timeMax": end.astimezone(LOCAL_TZ).isoformat(),
-        "singleEvents": True, "orderBy": "startTime", "maxResults": 250,
+        "singleEvents": True,
+        "orderBy": "startTime",
+        "maxResults": 250,
     }
     out = subprocess.run(
-        ["hatch_gws_cli", "calendar", "events", "list",
-         "--params", json.dumps(params)],
-        capture_output=True, text=True, check=True)
+        ["hatch_gws_cli", "calendar", "events", "list", "--params", json.dumps(params)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
     return json.loads(out.stdout).get("items", [])
 
 
 def simple_place(ev, title):
     blob = f"{title} {ev.get('location') or ''}"
-    if re.search(r"riverside high|color guard|state cup", blob, re.I) \
-            and not re.search(r"state college", blob, re.I):
+    if re.search(r"riverside high|color guard|state cup", blob, re.I) and not re.search(
+        r"state college", blob, re.I
+    ):
         place = "Riverside High"
     elif re.search(r"state college", blob, re.I):
         place = "State College"
@@ -329,8 +393,10 @@ def fmt_time(dt):
 
 def build(start_d, end_d, snapshot_dir, suppress_diff_changed=False):
     if len(CALENDARS) < 3:
-        raise SystemExit("Set FAMILY_CARDS_CAL_PRIMARY, FAMILY_CARDS_CAL_FAMILY "
-                         "and FAMILY_CARDS_CAL_KIDS environment variables.")
+        raise SystemExit(
+            "Set FAMILY_CARDS_CAL_PRIMARY, FAMILY_CARDS_CAL_FAMILY "
+            "and FAMILY_CARDS_CAL_KIDS environment variables."
+        )
     win_start = datetime.combine(start_d, time.min, LOCAL_TZ)
     win_end = datetime.combine(end_d + timedelta(days=1), time.min, LOCAL_TZ)
     raw, seen = [], set()
@@ -339,8 +405,7 @@ def build(start_d, end_d, snapshot_dir, suppress_diff_changed=False):
             canon = (ev.get("summary") or "").strip().lower()
             while TITLE_TAG_RE.search(canon):
                 canon = TITLE_TAG_RE.sub("", canon).strip()
-            key = (canon, json.dumps(ev.get("start")),
-                   json.dumps(ev.get("end")))
+            key = (canon, json.dumps(ev.get("start")), json.dumps(ev.get("end")))
             if key in seen:
                 continue
             seen.add(key)
@@ -372,10 +437,14 @@ def build(start_d, end_d, snapshot_dir, suppress_diff_changed=False):
     days = []
     d = start_d
     while d <= end_d:
-        days.append({"date": d.isoformat(),
-                     "label": d.strftime("%a %b %-d"),
-                     "with": "Dad" if d.isoformat() in dad_dates else "Mom",
-                     "entries": []})
+        days.append(
+            {
+                "date": d.isoformat(),
+                "label": d.strftime("%a %b %-d"),
+                "with": "Dad" if d.isoformat() in dad_dates else "Mom",
+                "entries": [],
+            }
+        )
         d += timedelta(days=1)
     by_date = {x["date"]: x for x in days}
 
@@ -414,7 +483,7 @@ def build(start_d, end_d, snapshot_dir, suppress_diff_changed=False):
         for kid in kid_keys:
             title = clean_title(summary, kid)
             entry = {
-                "id": f"{kid}-{start.date().isoformat()}-{re.sub(r'[^a-z0-9]+','-', title.lower()).strip('-')}",
+                "id": f"{kid}-{start.date().isoformat()}-{re.sub(r'[^a-z0-9]+', '-', title.lower()).strip('-')}",
                 "title": title,
                 "date": start.date().isoformat(),
                 "start": start.astimezone(LOCAL_TZ).isoformat(),
@@ -428,61 +497,133 @@ def build(start_d, end_d, snapshot_dir, suppress_diff_changed=False):
                 "legs": [],
             }
             tm = TRANSPORT_ANY_RE.match(summary)
-            standalone_pickup = bool(
-                re.search(r"\bpickup\s*$", summary, re.I)) and not tm
+            standalone_pickup = (
+                bool(re.search(r"\bpickup\s*$", summary, re.I)) and not tm
+            )
             if tm:
                 kind = "pickup" if "pick" in tm.group(1).lower() else "dropoff"
-                drv = resolve_driver(ev, kind, start, start, end, dad_dates,
-                                     travel_blocks, kid, title, evidence_log)
+                drv = resolve_driver(
+                    ev,
+                    kind,
+                    start,
+                    start,
+                    end,
+                    dad_dates,
+                    travel_blocks,
+                    kid,
+                    title,
+                    evidence_log,
+                )
                 if drv == "dad":
-                    entry["legs"].append({"kind": kind, "driver": "Dad",
-                                          "time_label": fmt_time(start)})
+                    entry["legs"].append(
+                        {"kind": kind, "driver": "Dad", "time_label": fmt_time(start)}
+                    )
                 elif drv not in ("mom", "ask", None):
                     entry["changed"] = True
                     entry["changed_note"] = f"{kind.capitalize()}: {drv.capitalize()}"
-                    entry["legs"].append({"kind": kind, "driver": drv.capitalize(),
-                                          "time_label": fmt_time(start)})
+                    entry["legs"].append(
+                        {
+                            "kind": kind,
+                            "driver": drv.capitalize(),
+                            "time_label": fmt_time(start),
+                        }
+                    )
                 entry["time_label"] = fmt_time(start)
             elif standalone_pickup:
                 entry["_standalone_pickup"] = True
-                drv = resolve_driver(ev, "pickup", start, start, end,
-                                     dad_dates, travel_blocks, kid, title,
-                                     evidence_log)
+                drv = resolve_driver(
+                    ev,
+                    "pickup",
+                    start,
+                    start,
+                    end,
+                    dad_dates,
+                    travel_blocks,
+                    kid,
+                    title,
+                    evidence_log,
+                )
                 if drv == "dad":
-                    entry["legs"].append({"kind": "pickup", "driver": "Dad",
-                                          "time_label": fmt_time(start)})
+                    entry["legs"].append(
+                        {
+                            "kind": "pickup",
+                            "driver": "Dad",
+                            "time_label": fmt_time(start),
+                        }
+                    )
                 elif drv not in ("mom", "ask", None):
                     entry["changed"] = True
                     entry["changed_note"] = f"Pickup: {drv.capitalize()}"
-                    entry["legs"].append({"kind": "pickup", "driver": drv.capitalize(),
-                                          "time_label": fmt_time(start)})
+                    entry["legs"].append(
+                        {
+                            "kind": "pickup",
+                            "driver": drv.capitalize(),
+                            "time_label": fmt_time(start),
+                        }
+                    )
                 entry["time_label"] = fmt_time(start)
             else:
-                drv_d = resolve_driver(ev, "dropoff", start, start, end,
-                                       dad_dates, travel_blocks, kid, title,
-                                       evidence_log)
+                drv_d = resolve_driver(
+                    ev,
+                    "dropoff",
+                    start,
+                    start,
+                    end,
+                    dad_dates,
+                    travel_blocks,
+                    kid,
+                    title,
+                    evidence_log,
+                )
                 if drv_d == "dad":
-                    entry["legs"].append({"kind": "dropoff", "driver": "Dad",
-                                          "time_label": fmt_time(start)})
+                    entry["legs"].append(
+                        {
+                            "kind": "dropoff",
+                            "driver": "Dad",
+                            "time_label": fmt_time(start),
+                        }
+                    )
                 elif drv_d not in ("mom", "ask", None):
                     entry["changed"] = True
                     entry["changed_note"] = f"Drop-off: {drv_d.capitalize()}"
-                    entry["legs"].append({"kind": "dropoff",
-                                          "driver": drv_d.capitalize(),
-                                          "time_label": fmt_time(start)})
+                    entry["legs"].append(
+                        {
+                            "kind": "dropoff",
+                            "driver": drv_d.capitalize(),
+                            "time_label": fmt_time(start),
+                        }
+                    )
                 if end - start >= PICKUP_MIN_DURATION:
-                    drv_p = resolve_driver(ev, "pickup", end, start, end,
-                                           dad_dates, travel_blocks, kid,
-                                           title, evidence_log)
+                    drv_p = resolve_driver(
+                        ev,
+                        "pickup",
+                        end,
+                        start,
+                        end,
+                        dad_dates,
+                        travel_blocks,
+                        kid,
+                        title,
+                        evidence_log,
+                    )
                     if drv_p == "dad":
-                        entry["legs"].append({"kind": "pickup", "driver": "Dad",
-                                              "time_label": fmt_time(end)})
+                        entry["legs"].append(
+                            {
+                                "kind": "pickup",
+                                "driver": "Dad",
+                                "time_label": fmt_time(end),
+                            }
+                        )
                     elif drv_p not in ("mom", "ask", None):
                         entry["changed"] = True
                         entry["changed_note"] = f"Pickup: {drv_p.capitalize()}"
-                        entry["legs"].append({"kind": "pickup",
-                                              "driver": drv_p.capitalize(),
-                                              "time_label": fmt_time(end)})
+                        entry["legs"].append(
+                            {
+                                "kind": "pickup",
+                                "driver": drv_p.capitalize(),
+                                "time_label": fmt_time(end),
+                            }
+                        )
             day = by_date.get(entry["date"])
             if day is not None:
                 day["entries"].append(entry)
@@ -495,23 +636,27 @@ def build(start_d, end_d, snapshot_dir, suppress_diff_changed=False):
         entries = day["entries"]
         for e in list(entries):
             if e.pop("_standalone_pickup", False):
-                dup = any(o is not e and o["id"].split("-")[0] ==
-                          e["id"].split("-")[0] and any(
-                    l["kind"] == "pickup" and
-                    l["time_label"] == e["time_label"] for l in o["legs"])
-                    for o in entries)
+                dup = any(
+                    o is not e
+                    and o["id"].split("-")[0] == e["id"].split("-")[0]
+                    and any(
+                        l["kind"] == "pickup" and l["time_label"] == e["time_label"]
+                        for l in o["legs"]
+                    )
+                    for o in entries
+                )
                 if dup:
                     entries.remove(e)
                     counts[e["id"].split("-")[0]] -= 1
-                    context.append((e["title"],
-                                    "standalone pickup merged into activity"))
+                    context.append(
+                        (e["title"], "standalone pickup merged into activity")
+                    )
 
     result = {}
     for kid, name in KIDS.items():
         kid_days = []
         for day in days:
-            entries = [e for e in day["entries"]
-                       if e["id"].startswith(kid + "-")]
+            entries = [e for e in day["entries"] if e["id"].startswith(kid + "-")]
             entries.sort(key=lambda e: e["start"])
             kid_days.append({**day, "entries": entries})
         card = {
@@ -524,10 +669,12 @@ def build(start_d, end_d, snapshot_dir, suppress_diff_changed=False):
         # only). suppress_diff_changed is for logic-change regenerations:
         # the method switch itself must not tag entries as CHANGED.
         snap = Path(snapshot_dir) / f"{kid}.json"
-        prev_card = (json.loads(snap.read_text())
-                     if snap.exists() else None)
-        prev = ({e["id"]: e for day in prev_card["days"]
-                 for e in day["entries"]} if prev_card else {})
+        prev_card = json.loads(snap.read_text()) if snap.exists() else None
+        prev = (
+            {e["id"]: e for day in prev_card["days"] for e in day["entries"]}
+            if prev_card
+            else {}
+        )
         if prev_card and not suppress_diff_changed:
             for day in card["days"]:
                 for e in day["entries"]:
@@ -545,13 +692,19 @@ def build(start_d, end_d, snapshot_dir, suppress_diff_changed=False):
                 if not e["changed"]:
                     continue
                 p = prev.get(e["id"])
-                if (p and p.get("changed") and p.get("changed_at")
-                        and p["start"] == e["start"] and p["end"] == e["end"]
-                        and p.get("changed_note") == e.get("changed_note")
-                        and p.get("legs") == e.get("legs")):
+                if (
+                    p
+                    and p.get("changed")
+                    and p.get("changed_at")
+                    and p["start"] == e["start"]
+                    and p["end"] == e["end"]
+                    and p.get("changed_note") == e.get("changed_note")
+                    and p.get("legs") == e.get("legs")
+                ):
                     e["changed_at"] = p["changed_at"]
                 else:
                     e["changed_at"] = gen_at
+
         # last_changed_at: when the card's CONTENT last actually changed
         # vs the previous snapshot (entries/legs; the generated_at /
         # last_changed_at / changed_at fields themselves don't count).
@@ -561,10 +714,13 @@ def build(start_d, end_d, snapshot_dir, suppress_diff_changed=False):
         def _sig_entries(c):
             days = []
             for day in c["days"]:
-                es = [{k: v for k, v in e.items() if k != "changed_at"}
-                      for e in day["entries"]]
+                es = [
+                    {k: v for k, v in e.items() if k != "changed_at"}
+                    for e in day["entries"]
+                ]
                 days.append({**day, "entries": es})
             return json.dumps(days, sort_keys=True, default=str)
+
         if prev_card is None:
             card["last_changed_at"] = gen_at
         elif _sig_entries(card) != _sig_entries(prev_card):
@@ -583,41 +739,66 @@ def main():
     ap.add_argument("--days", type=int, default=14)
     ap.add_argument("--out-dir", default=".")
     ap.add_argument("--snapshot-dir", required=True)
-    ap.add_argument("--suppress-diff-changed", action="store_true",
-                    help="logic-change regeneration: do not tag entries "
-                         "CHANGED from the snapshot time diff this run")
+    ap.add_argument(
+        "--suppress-diff-changed",
+        action="store_true",
+        help="logic-change regeneration: do not tag entries "
+        "CHANGED from the snapshot time diff this run",
+    )
     args = ap.parse_args()
-    start_d = (date.fromisoformat(args.start) if args.start
-               else datetime.now(LOCAL_TZ).date())
+    start_d = (
+        date.fromisoformat(args.start) if args.start else datetime.now(LOCAL_TZ).date()
+    )
     end_d = start_d + timedelta(days=args.days - 1)
     cards, filtered, context, counts, evidence = build(
-        start_d, end_d, args.snapshot_dir, args.suppress_diff_changed)
+        start_d, end_d, args.snapshot_dir, args.suppress_diff_changed
+    )
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
     for kid, card in cards.items():
         (out / f"{kid}.json").write_text(json.dumps(card, indent=2))
-    (out / "manifest.json").write_text(json.dumps(
-        {"cards": [f"{kid}.json" for kid in cards],
-         "generated_at": next(iter(cards.values()))["generated_at"]},
-        indent=2))
+    (out / "manifest.json").write_text(
+        json.dumps(
+            {
+                "cards": [f"{kid}.json" for kid in cards],
+                "generated_at": next(iter(cards.values()))["generated_at"],
+            },
+            indent=2,
+        )
+    )
     ev_path = Path(args.snapshot_dir).parent / (
-        f"driver-evidence-{start_d.isoformat()}_{end_d.isoformat()}.json")
-    ev_path.write_text(json.dumps(
-        {"window": {"start": start_d.isoformat(), "end": end_d.isoformat()},
-         "legs": evidence,
-         "conflicts": [e for e in evidence if e["conflict"]]}, indent=2))
-    print(json.dumps({"counts": counts, "filtered": filtered,
-                      "context": context,
-                      "evidence_log": str(ev_path),
-                      "last_changed_at": {k: c["last_changed_at"]
-                                          for k, c in cards.items()},
-                      "changed_entries": [
-                          {"kid": k, "id": e["id"],
-                           "changed_at": e.get("changed_at")}
-                          for k, c in cards.items() for d in c["days"]
-                          for e in d["entries"] if e["changed"]],
-                      "conflicts": [e for e in evidence if e["conflict"]]},
-                     indent=2))
+        f"driver-evidence-{start_d.isoformat()}_{end_d.isoformat()}.json"
+    )
+    ev_path.write_text(
+        json.dumps(
+            {
+                "window": {"start": start_d.isoformat(), "end": end_d.isoformat()},
+                "legs": evidence,
+                "conflicts": [e for e in evidence if e["conflict"]],
+            },
+            indent=2,
+        )
+    )
+    print(
+        json.dumps(
+            {
+                "counts": counts,
+                "filtered": filtered,
+                "context": context,
+                "evidence_log": str(ev_path),
+                "last_changed_at": {k: c["last_changed_at"] for k, c in cards.items()},
+                "changed_entries": [
+                    {"kid": k, "id": e["id"], "changed_at": e.get("changed_at")}
+                    for k, c in cards.items()
+                    for d in c["days"]
+                    for e in d["entries"]
+                    if e["changed"]
+                ],
+                "conflicts": [e for e in evidence if e["conflict"]],
+            },
+            indent=2,
+        )
+    )
 
 
 if __name__ == "__main__":

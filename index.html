@@ -37,8 +37,8 @@
   .demo-banner { background: #b3541e; color: #fff; font-weight: 700;
                  border-radius: 999px; padding: 4px 14px; font-size: .95rem;
                  max-width: 420px; margin: 8px auto 0; }
-  .updated { color: #888; font-size: .85rem; margin-top: 2px; }
-  .updated-item { color: #888; font-size: .8rem; margin-left: 6px; }
+  .updated { color: #6f6f6f; font-size: .85rem; margin-top: 2px; }
+  .updated-item { color: #6f6f6f; font-size: .8rem; margin-left: 6px; }
   .notebox { background: #fff7ea; border: 2px dashed #b3541e;
              border-radius: 16px; padding: 14px; margin: 16px 0; opacity: .75; }
   .notebox h2 { font-size: 1.2rem; margin: 0 0 6px; }
@@ -108,8 +108,8 @@ function render(data) {
 const demoNoteBoxHtml = `<section class="notebox">
   <h2>📝 Anything on your side?</h2>
   <p>Something scheduled, or something you expect, that isn't here? Tell Dad — he'll see it.</p>
-  <textarea disabled placeholder="e.g. Sleepover at a friend's Friday night"></textarea>
-  <div class="row"><input type="date" disabled></div>
+  <textarea disabled aria-label="Your note" placeholder="e.g. Sleepover at a friend's Friday night"></textarea>
+  <div class="row"><input type="date" disabled aria-label="Date (optional)"></div>
   <div class="row"><input type="time" disabled><input type="time" disabled></div>
   <p style="margin-top:8px">Date and times are optional — a guess is fine.</p>
   <div class="row"><button type="button" disabled>Tell Dad</button></div>

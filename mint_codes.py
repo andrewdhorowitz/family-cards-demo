@@ -50,16 +50,28 @@ def iso_z(dt):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Mint Family Cards access codes")
-    ap.add_argument("--entry", action="append", default=[],
-                    help='"label|scope|duration" — repeatable')
-    ap.add_argument("--out", default="./codes-plain.txt",
-                    help="plain-links output file (point it OUTSIDE the repo)")
-    ap.add_argument("--codes", default=str(Path(__file__).with_name("codes.json")),
-                    help="codes.json path (default: next to this script)")
-    ap.add_argument("--base", default="https://example.pages.dev",
-                    help="link base URL")
-    ap.add_argument("--merge", action="store_true",
-                    help="merge into existing codes.json instead of replacing it")
+    ap.add_argument(
+        "--entry",
+        action="append",
+        default=[],
+        help='"label|scope|duration" — repeatable',
+    )
+    ap.add_argument(
+        "--out",
+        default="./codes-plain.txt",
+        help="plain-links output file (point it OUTSIDE the repo)",
+    )
+    ap.add_argument(
+        "--codes",
+        default=str(Path(__file__).with_name("codes.json")),
+        help="codes.json path (default: next to this script)",
+    )
+    ap.add_argument("--base", default="https://example.pages.dev", help="link base URL")
+    ap.add_argument(
+        "--merge",
+        action="store_true",
+        help="merge into existing codes.json instead of replacing it",
+    )
     args = ap.parse_args(argv)
 
     if not args.entry:
@@ -74,11 +86,13 @@ def main(argv=None):
         label, scope, duration = (p.strip() for p in parts)
         expires = now + parse_duration(duration)
         token = secrets.token_urlsafe(24)  # >=128-bit
-        entries.append({
-            "scope": scope,
-            "sha256": hashlib.sha256(token.encode()).hexdigest(),
-            "expires": iso_z(expires),
-        })
+        entries.append(
+            {
+                "scope": scope,
+                "sha256": hashlib.sha256(token.encode()).hexdigest(),
+                "expires": iso_z(expires),
+            }
+        )
         lines.append(
             f"{label} | scope={scope} | expires={iso_z(expires)} | "
             f"{args.base}/?c={token}"
