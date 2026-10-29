@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Mint Family Cards access codes (Phase 2).
+"""Mint access codes for the Family Cards DEMO.
+
+Demo edition: the codes gate the fictional Emma / Noah demo cards —
+mint them freely for trying the demo out.
 
 Generates random tokens, stores ONLY their SHA-256 hashes + expiries in
 codes.json (repo root, next to this script), and writes the plain links
@@ -10,7 +13,7 @@ and expiries are.
 Usage:
     python3 mint_codes.py --out /path/outside/repo/codes.txt \
         --entry "emma|emma|14d" \
-        --entry "owner — permanent|owner|365d" \
+        --entry "owner view|owner|30d" \
         --entry "quick test|emma|1h"
 
 Each --entry is "label|scope|duration" where duration is like 14d, 1h,
