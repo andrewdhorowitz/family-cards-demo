@@ -1,0 +1,56 @@
+# Smoke — backfilled from the repo-template standard (kit v3,
+# 2026-10-28). Installed to .github/workflows/smoke.yml by
+# update-ci.sh. A real Chromium loads the demo page (served from the
+# repo root by a local HTTP server — no deployment, no secrets) and
+# runs the Playwright spec in smoke/: owner tabs for both fake kids,
+# entries rendering from the checked-in JSON, the CHANGED example,
+# and the disabled demo note box.
+#
+# The live family-cards repo deliberately has NO equivalent: its
+# page is behind an access-code gate a browser test can't pass.
+name: Smoke
+
+on:
+  workflow_dispatch:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Playwright smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for a smoke suite
+        id: suite
+        run: |
+          if [ -d smoke ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No smoke/ directory — skipping."
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.suite.outputs.present == 'true'
+        with:
+          node-version: "20"
+      - name: Install Playwright + Chromium (pinned)
+        if: steps.suite.outputs.present == 'true'
+        run: |
+          npm install --no-save "@playwright/test@1.64.1"
+          npx playwright install --with-deps chromium
+      - name: Serve the repo root
+        if: steps.suite.outputs.present == 'true'
+        run: |
+          python3 -m http.server 8901 --bind 127.0.0.1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8901/ >/dev/null; then break; fi
+            sleep 1
+          done
+      - name: Run the smoke spec
+        if: steps.suite.outputs.present == 'true'
+        env:
+          SMOKE_BASE_URL: http://127.0.0.1:8901/
+        run: npx playwright test smoke/ --reporter=list

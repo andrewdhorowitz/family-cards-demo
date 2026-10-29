@@ -1,0 +1,42 @@
+# Tests — backfilled from the repo-template standard (kit v3,
+# 2026-10-28). Installed to .github/workflows/tests.yml by
+# update-ci.sh. Runs the pytest suite in tests/ — the demo
+# generator's driver-decision rules as permanent cases, in the
+# demo's generic vocabulary with invented fixtures.
+#
+# The suite stubs the calendar layer — it never calls a real
+# calendar and needs no secrets or credentials.
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    name: pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for a test suite
+        id: suite
+        run: |
+          if [ -d tests ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No tests/ directory — skipping."
+          fi
+      - uses: actions/setup-python@v5
+        if: steps.suite.outputs.present == 'true'
+        with:
+          python-version: "3.12"
+      - name: Install pytest (pinned)
+        if: steps.suite.outputs.present == 'true'
+        run: pip install "pytest==9.2.0"
+      - name: Run the suite
+        if: steps.suite.outputs.present == 'true'
+        run: python -m pytest -q
