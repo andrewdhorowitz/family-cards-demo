@@ -117,13 +117,13 @@ function render(data) {
 }
 const demoNoteBoxHtml = `<section class="notebox">
   <h2>📝 Anything on your side?</h2>
-  <p>Something scheduled, or something you expect, that isn't here? Tell Dad — he'll see it.</p>
+  <p>Something scheduled, or something you expect, that isn't here? In a real family setup, this box would send a note to a parent.</p>
   <textarea disabled aria-label="Your note" placeholder="e.g. Sleepover at a friend's Friday night"></textarea>
   <div class="row"><input type="date" disabled aria-label="Date (optional)"></div>
   <div class="row"><input type="time" disabled><input type="time" disabled></div>
   <p style="margin-top:8px">Date and times are optional — a guess is fine.</p>
-  <div class="row"><button type="button" disabled>Tell Dad</button></div>
-  <p style="margin-top:8px"><strong>Demo — notes are turned off here.</strong></p>
+  <div class="row"><button type="button" disabled>Send note</button></div>
+  <p style="margin-top:8px"><strong>Demo — notes are turned off here; nothing is sent or stored.</strong></p>
 </section>`;
 async function load() {
   // Where a gate runs (Cloudflare), it tells us who is looking via
