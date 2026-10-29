@@ -497,11 +497,21 @@ def build(start_d, end_d, snapshot_dir, suppress_diff_changed=False):
                 "legs": [],
             }
             tm = TRANSPORT_ANY_RE.match(summary)
+            verb = tm.group(1) if tm else None
+            if tm is None:
+                # A named third-party transport title ("Grandma pick up
+                # Emma") is a manual transport event too; its verb is
+                # group 2 of TRANSPORT_NAMED_RE. Titles that END at the
+                # verb ("Emma Pickup") stay on the standalone-pickup
+                # path below so they still merge into the activity entry.
+                nm = TRANSPORT_NAMED_RE.match(summary)
+                if nm and summary[nm.end() :].strip():
+                    tm, verb = nm, nm.group(2)
             standalone_pickup = (
                 bool(re.search(r"\bpickup\s*$", summary, re.I)) and not tm
             )
             if tm:
-                kind = "pickup" if "pick" in tm.group(1).lower() else "dropoff"
+                kind = "pickup" if "pick" in verb.lower() else "dropoff"
                 drv = resolve_driver(
                     ev,
                     kind,
