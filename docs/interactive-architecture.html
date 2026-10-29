@@ -57,7 +57,7 @@
 </div>
 <div class="legend">
   <span>👤 <b>Person</b></span><span>🪟 <b>Browser window</b> = UI screen</span><span>🗄️ <b>Rack</b> = server</span><span>⚙️ <b>Gear</b> = worker / job</span><span>🛢️ <b>Cylinder</b> = database / store</span><span>☁️ <b>Cloud</b> = external service</span><span>📦 <b>Repo</b> = source store</span>
-  <span>| Hosts: <b style="color:#24292f">GitHub</b> · <b style="color:#f48120">Cloudflare</b> · <b style="color:#7c3aed">Muse</b> · <b style="color:#1a73e8">Google</b></span>
+  <span>| Hosts: <b style="color:#24292f">GitHub</b> · <b style="color:#f48120">Cloudflare</b> · <b style="color:#7c3aed">Local</b> · <b style="color:#1a73e8">Sample data</b></span>
 </div>
 <div id="wrap">
   <div id="viewport"><div id="world">
@@ -65,39 +65,39 @@
     <div class="zone people" style="left:10px;top:40px;width:250px;height:560px"><div class="ztitle">People</div><div class="zsub">Outside every host</div></div>
     <div class="zone github" style="left:290px;top:40px;width:380px;height:250px"><div class="ztitle">GitHub</div><div class="zsub">Repository hosting</div></div>
     <div class="zone cloudflare" style="left:290px;top:330px;width:700px;height:330px"><div class="ztitle">Cloudflare Pages</div><div class="zsub">Edge hosting — the gated site lives here</div></div>
-    <div class="zone muse" style="left:290px;top:700px;width:700px;height:330px"><div class="ztitle">Muse — assistant side</div><div class="zsub">Automation runtime, off the web host</div></div>
-    <div class="zone google" style="left:1030px;top:40px;width:400px;height:620px"><div class="ztitle">Google</div><div class="zsub">External services</div></div>
+    <div class="zone muse" style="left:290px;top:700px;width:700px;height:330px"><div class="ztitle">Local — this repo</div><div class="zsub">Python scripts you run by hand; nothing is scheduled</div></div>
+    <div class="zone google" style="left:1030px;top:40px;width:400px;height:620px"><div class="ztitle">Sample data</div><div class="zsub">Bundled invented files — no external services</div></div>
   </div></div>
   <aside id="panel">
     <h2 id="ptitle">How to read this</h2>
     <div class="meta" id="pmeta">Shape = what kind of thing it is · Zone = which host runs it</div>
-    <p id="pbody">Every container from the approved v2 is here, re-drawn by type and placed on its real host. The Card Page is a <b>screen</b>, the Gate is a <b>server</b>, the Generator / Minter / watches are <b>workers</b>, the JSON files are <b>cylinders</b>, and Google's two services are <b>clouds</b>. Click any box for its job.</p>
+    <p id="pbody">The demo's pieces, drawn by type and placed where they run. The Card Page is a <b>screen</b>, the Gate is a <b>server</b>, the Generator and Minter are <b>local Python workers</b>, and the JSON files are <b>cylinders</b>. Click any box for its job. Everything here is invented sample content — the demo connects to no account or service.</p>
   </aside>
 </div>
-<footer>This page is the interactive rendering of the canonical v3 diagram in docs/architecture.md (same folder) — the Mermaid source there is the source of truth, and this rendering is generated from the same model. The demo's note flow is the designed full flow; in the demo repo the note box is disabled and the endpoint is a stub.</footer>
+<footer>This page is the interactive rendering of the diagram in docs/architecture.md (same folder) — the Mermaid source there is the source of truth, and this rendering is generated from the same model. In the demo the note box is disabled and its endpoint is a stub that discards; there is no notes inbox and nothing is forwarded anywhere.</footer>
 <script>
 const NODES = [
- {id:"kid", x:25, y:120, cls:"person", icon:"👤", t:"Emma / Noah", k:"Person — kid viewers", host:"People", body:"Each kid reads only their own card, and can send a note from it. Access is by a coded link, not an account."},
- {id:"owner", x:25, y:290, cls:"person", icon:"👤", t:"Dad", k:"Person — owner", host:"People", body:"Reads both cards with tabs. Mints the access codes (via the Minter) and receives new-note alerts."},
+ {id:"kid", x:25, y:120, cls:"person", icon:"👤", t:"Emma / Noah", k:"Person — kid viewers", host:"People", body:"Each kid reads only their own card. Access is by a coded link, not an account. (The note box on the card is decorative in the demo.)"},
+ {id:"owner", x:25, y:290, cls:"person", icon:"👤", t:"Dad", k:"Person — owner", host:"People", body:"Reads both cards with tabs, and mints the demo access codes (via the Minter)."},
  {id:"parent", x:25, y:460, cls:"person", icon:"👤", t:"Parent viewer", k:"Person — read-only", host:"People", body:"Reads both cards, logistics only, with a parent-scoped code."},
- {id:"repo", x:370, y:120, cls:"repo", icon:"📦", t:"Family Cards Demo Repo", k:"Repo — source store", host:"GitHub", body:"Canonical source: page, gate, generator, and the architecture diagram — plus the generated card data the workers push."},
- {id:"page", x:330, y:420, cls:"ui", icon:"🪟", t:"Card Page", k:"UI screen — static HTML / JS", host:"Cloudflare Pages", body:"The only thing a reader ever sees. Renders one kid card, or both with tabs for owner / parent. Shows Big and CHANGED tags and the notes box. It never calls a calendar API."},
+ {id:"repo", x:370, y:120, cls:"repo", icon:"📦", t:"Family Cards Demo Repo", k:"Repo — source store", host:"GitHub", body:"Canonical source: page, gate, generator, sample data, and the architecture diagram — plus the generated card data."},
+ {id:"page", x:330, y:420, cls:"ui", icon:"🪟", t:"Card Page", k:"UI screen — static HTML / JS", host:"Cloudflare Pages", body:"The only thing a reader ever sees. Renders one kid card, or both with tabs for owner / parent. Shows Big and CHANGED tags and the (disabled) notes box. It renders static JSON only — it never calls any API."},
  {id:"gate", x:600, y:420, cls:"server", icon:"🗄️", t:"Gate Middleware", k:"Server — Pages Function", host:"Cloudflare Pages", body:"Checks every request: redeems a code against stored hashes, sets a signed scoped cookie, enforces scope per file, answers the scope check, and handles the note endpoint. Fails closed."},
  {id:"carddata", x:330, y:545, cls:"db", icon:"🛢️", t:"Per-kid Card Data", k:"Database — JSON files", host:"Cloudflare Pages (static files)", body:"emma.json and noah.json — one file per kid: two-week window, With Dad / With Mom days, entries, legs, CHANGED tags, and that kid's own notes only."},
- {id:"codes", x:600, y:545, cls:"db", icon:"🛢️", t:"Access Code Hashes", k:"Database — JSON file", host:"Cloudflare Pages (static files)", body:"codes.json holds SHA-256 hashes and expiries only. Plain codes are never stored anywhere in the system."},
- {id:"gen", x:330, y:790, cls:"worker", icon:"⚙️", t:"Card Generator", k:"Worker — Python", host:"Muse, assistant side", body:"The engine. Reads the calendars, drops sensitive and admin events, frames With Dad / With Mom, resolves drivers, applies Big and CHANGED, folds in kid notes, and writes the per-kid JSON."},
- {id:"minter", x:600, y:790, cls:"worker", icon:"⚙️", t:"Code Minter", k:"Worker — Python", host:"Muse, assistant side", body:"Mints random per-scope expiring codes in batches. Only the hashes are committed to the repo."},
- {id:"watch", x:330, y:920, cls:"worker", icon:"⚙️", t:"Notes Watch + Rebuilds", k:"Worker — scheduled jobs", host:"Muse, assistant side", body:"Morning and nightly rebuilds, rebuilds when a change is spotted, and the notes watch: poll the form, alert Dad verbatim on a new note, then regenerate."},
- {id:"snap", x:600, y:920, cls:"db", icon:"🛢️", t:"Snapshots + Notes State", k:"Database — files, outside repo", host:"Muse, assistant side", body:"The previous card per kid (the CHANGED diff baseline and the Last changed stamp) and the seen-note IDs used to dedupe form responses."},
- {id:"cal", x:1095, y:150, cls:"cloud", icon:"☁️", t:"Google Calendar", k:"External service — cloud", host:"Google", body:"The source calendars (generic labels: Primary, Family, Kids). Read only on the assistant side — no calendar credential ever lives on the web host."},
- {id:"form", x:1095, y:330, cls:"cloud", icon:"☁️", t:"Google Form", k:"External service — cloud", host:"Google", body:"The kid-notes inbox in the full flow: notes land as form responses, never linked publicly. In the demo this is stubbed — the box is disabled and nothing is forwarded."}
+ {id:"codes", x:600, y:545, cls:"db", icon:"🛢️", t:"Access Code Hashes", k:"Database — JSON file", host:"Cloudflare Pages (static files)", body:"codes.json holds SHA-256 hashes and expiries only. Plain demo codes are never stored in the repo."},
+ {id:"gen", x:330, y:790, cls:"worker", icon:"⚙️", t:"Card Generator", k:"Worker — Python", host:"Local (this repo)", body:"The engine of the demo. Reads the bundled sample events, drops the sensitive sample entries, frames With Dad / With Mom, resolves drivers, applies Big and CHANGED, and writes the per-kid JSON."},
+ {id:"minter", x:600, y:790, cls:"worker", icon:"⚙️", t:"Code Minter", k:"Worker — Python", host:"Local (this repo)", body:"Mints random per-scope expiring demo codes in batches. Only the hashes are committed to the repo."},
+ {id:"watch", x:330, y:920, cls:"worker", icon:"⚙️", t:"Card Snapshots", k:"Database — local files", host:"Local (this repo)", body:"The previous run's cards, kept in a local snapshots folder. The next generator run diffs against them to decide CHANGED tags and the Last changed stamp. Nothing is scheduled in the demo — you re-run the generator by hand."},
+ {id:"snap", x:600, y:920, cls:"db", icon:"🛢️", t:"Build Report", k:"File — JSON, written per run", host:"Local (this repo)", body:"A per-run JSON report of how each pickup / drop-off leg was decided (which rule won), written next to the snapshots. A development aid for working on the demo."},
+ {id:"cal", x:1095, y:150, cls:"db", icon:"📄", t:"Sample Events", k:"Data — bundled JSON file", host:"This repo", body:"sample_events.json — the invented events the generator practices on, grouped into three sample calendars. The demo has no calendar connection and reads no account; this file is the generator's only input."},
+ {id:"form", x:1095, y:330, cls:"db", icon:"🗒️", t:"Sample Notes", k:"Data — inside the card JSON", host:"This repo", body:"A few invented notes baked into the sample card files so the design can show how notes would look on a card. The note box itself is disabled in the demo; nothing is collected or sent."}
 ];
 const EDGES = [
  ["kid","gate","coded link, then cookie"],["owner","gate","owner link"],["parent","gate","parent link"],
  ["gate","page","allows scope"],["gate","codes","checks hash + expiry"],["page","carddata","fetches JSON by scope"],
- ["page","gate","POST /note"],["gate","form","forwards note (full flow)"],
- ["watch","form","polls new notes"],["watch","gen","alert + regenerate"],["gen","cal","reads events"],
- ["gen","snap","CHANGED diff"],["gen","carddata","writes per-kid JSON"],["minter","codes","hashes only"],
+ ["page","gate","POST /note (stub: discards)"],
+ ["gen","cal","reads events"],
+ ["gen","snap","writes the build report"],["gen","carddata","writes per-kid JSON"],["minter","codes","hashes only"],
  ["gen","repo","pushes card data"],["minter","repo","pushes hashes"],["repo","page","deploys"]
 ];
 const world = document.getElementById('world'), svg = document.getElementById('edges'), vp = document.getElementById('viewport');
