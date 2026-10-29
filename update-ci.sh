@@ -12,7 +12,13 @@
 #      never overwritten. (The workflows travel at ci-src/ because
 #      the Muse GitHub App cannot push files under
 #      .github/workflows/; the repo owner can.)
-#   2. Deletes itself and ci-src/, and lands the removal plus the
+#   2. Writes the full run output to setup-results.txt in the repo
+#      root (captured to a temp file first and copied in only when
+#      the run has finished, so the file always holds the complete
+#      output — `cat setup-results.txt` afterwards shows the whole
+#      run for review). This repo is PUBLIC, so the file stays local
+#      and untracked: it is never staged or committed.
+#   3. Deletes itself and ci-src/, and lands the removal plus the
 #      installed workflows in ONE cleanup commit, which it pushes.
 # It is safe to re-run: installs are idempotent, and after a
 # successful run there is nothing left to install.
@@ -28,6 +34,9 @@
 set -uo pipefail
 cd "$(dirname "$0")"
 
+RESULTS_FILE="setup-results.txt"
+TMPLOG="$(mktemp)"
+
 RESULTS=""
 report() { # report <ok|fail|skip> <label>
   local mark="✓"
@@ -37,31 +46,44 @@ report() { # report <ok|fail|skip> <label>
   RESULTS+="$mark $2"$'\n'
 }
 
-echo "== File install =="
-if [ -d ci-src ] && ls ci-src/*.yml >/dev/null 2>&1; then
-  mkdir -p .github/workflows
-  for staged in ci-src/*.yml; do
-    base="$(basename "$staged")"
-    if [ -f ".github/workflows/$base" ]; then
-      report skip "Workflow $base already present (.github/workflows/$base) — not overwritten"
-    else
-      cp "$staged" ".github/workflows/$base"
-      report ok "Workflow installed (.github/workflows/$base)"
-    fi
-  done
-else
-  report skip "No staged workflows found (ci-src/*.yml) — nothing to install"
-fi
+main() {
+  echo "== File install =="
+  if [ -d ci-src ] && ls ci-src/*.yml >/dev/null 2>&1; then
+    mkdir -p .github/workflows
+    for staged in ci-src/*.yml; do
+      base="$(basename "$staged")"
+      if [ -f ".github/workflows/$base" ]; then
+        report skip "Workflow $base already present (.github/workflows/$base) — not overwritten"
+      else
+        cp "$staged" ".github/workflows/$base"
+        report ok "Workflow installed (.github/workflows/$base)"
+      fi
+    done
+  else
+    report skip "No staged workflows found (ci-src/*.yml) — nothing to install"
+  fi
 
+  echo ""
+  echo "== Summary =="
+  printf '%s' "$RESULTS"
+}
+
+# Capture the whole run to a temp log OUTSIDE the repo first; only when
+# it has fully finished is the log copied to setup-results.txt, so the
+# file always holds the complete, final output of the run.
+main 2>&1 | tee "$TMPLOG"
+cp "$TMPLOG" "$RESULTS_FILE"
+rm -f "$TMPLOG"
 echo ""
-echo "== Summary =="
-printf '%s' "$RESULTS"
+echo "Full output saved locally in $RESULTS_FILE (untracked — delete it whenever; it is NOT committed)."
 
 echo ""
 echo "== Cleanup =="
 # One commit: this script removed, ci-src/ removed, the installed
-# workflows added. If the commit or push fails, the installs above
-# still stand — tidy the files by hand.
+# workflows added. The staging below is pathspec-explicit and
+# setup-results.txt is deliberately NOT staged — it stays a local,
+# untracked file (public repo). If the commit or push fails, the
+# installs above still stand — tidy the files by hand.
 git rm -q update-ci.sh >/dev/null 2>&1 || rm -f update-ci.sh
 if [ -d ci-src ]; then
   git rm -rq ci-src >/dev/null 2>&1 || rm -rf ci-src
