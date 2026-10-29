@@ -13,8 +13,6 @@ ignore = [
     "FURB167", # re.I vs re.IGNORECASE flag aliases, used throughout (style only)
     "FURB162", # .replace("Z", "+00:00") before fromisoformat — kept deliberately
     "SIM114",  # if/elif with same arms in the last_changed_at logic (readability choice)
-    "I001",    # generate_cards.py imports os mid-file, after the comment explaining env-based calendar IDs
-    "E402",    # the same deliberate mid-file `import os` as I001 above (found in the 2026-10-28 fix pass — the audit's baseline missed it)
     "E741",    # ambiguous `l` as the leg variable in the snapshot-diff comprehension in generate_cards.py (style only; found in the 2026-10-28 fix pass)
     "EXE001",  # shebang present but the executable bit is not preserved by the push pipeline
     "UP017",   # mint_codes.py spells it datetime.timezone.utc instead of datetime.UTC (equivalent)
