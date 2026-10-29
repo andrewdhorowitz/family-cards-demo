@@ -1,8 +1,8 @@
 {
   "project": "Family Cards",
-  "header_sub": "Richer shapes + host view. <b>Drag any box</b> to move it, <b>drag the background</b> to pan, <b>scroll / pinch buttons</b> to zoom, <b>click a box</b> for its details. Dragging explores the view — it does not change the canonical source (docs/architecture.md in this repo). Demo only: Emma / Noah.",
-  "panel_body": "Every container from the approved v2 is here, re-drawn by type and placed on its real host. The Card Page is a <b>screen</b>, the Gate is a <b>server</b>, the Generator / Minter / watches are <b>workers</b>, the JSON files are <b>cylinders</b>, and Google's two services are <b>clouds</b>. Click any box for its job.",
-  "footer_note": "This page is the interactive rendering of the canonical v3 diagram in docs/architecture.md (same folder) — the Mermaid source there is the source of truth, and this rendering is generated from the same model. The demo's note flow is the designed full flow; in the demo repo the note box is disabled and the endpoint is a stub.",
+  "header_sub": "Richer shapes + host view. <b>Drag any box</b> to move it, <b>drag the background</b> to pan, <b>scroll / pinch buttons</b> to zoom, <b>click a box</b> for its details. Dragging explores the view \u2014 it does not change the canonical source (docs/architecture.md in this repo). Demo only: Emma / Noah.",
+  "panel_body": "The demo's pieces, drawn by type and placed where they run. The Card Page is a <b>screen</b>, the Gate is a <b>server</b>, the Generator and Minter are <b>local Python workers</b>, and the JSON files are <b>cylinders</b>. Click any box for its job. Everything here is invented sample content \u2014 the demo connects to no account or service.",
+  "footer_note": "This page is the interactive rendering of the diagram in docs/architecture.md (same folder) \u2014 the Mermaid source there is the source of truth, and this rendering is generated from the same model. In the demo the note box is disabled and its endpoint is a stub that discards; there is no notes inbox and nothing is forwarded anywhere.",
   "folded_elements": [
     "noteep",
     "sched"
@@ -10,110 +10,114 @@
   "zones": {
     "cloudflare": {
       "title": "Cloudflare Pages",
-      "sub": "Edge hosting — the gated site lives here"
+      "sub": "Edge hosting \u2014 the gated site lives here"
     },
     "muse": {
-      "title": "Muse — assistant side"
+      "title": "Local \u2014 this repo"
+    },
+    "google": {
+      "title": "Sample data",
+      "sub": "Bundled invented files \u2014 no external services"
     }
   },
   "nodes": {
     "kid": {
       "title": "Emma / Noah",
-      "k": "Person — kid viewers",
+      "k": "Person \u2014 kid viewers",
       "host": "People",
-      "body": "Each kid reads only their own card, and can send a note from it. Access is by a coded link, not an account.",
-      "icon": "👤"
+      "body": "Each kid reads only their own card. Access is by a coded link, not an account. (The note box on the card is decorative in the demo.)",
+      "icon": "\ud83d\udc64"
     },
     "owner": {
       "title": "Dad",
-      "k": "Person — owner",
+      "k": "Person \u2014 owner",
       "host": "People",
-      "body": "Reads both cards with tabs. Mints the access codes (via the Minter) and receives new-note alerts.",
-      "icon": "👤"
+      "body": "Reads both cards with tabs, and mints the demo access codes (via the Minter).",
+      "icon": "\ud83d\udc64"
     },
     "parent": {
       "title": "Parent viewer",
-      "k": "Person — read-only",
+      "k": "Person \u2014 read-only",
       "host": "People",
       "body": "Reads both cards, logistics only, with a parent-scoped code.",
-      "icon": "👤"
+      "icon": "\ud83d\udc64"
     },
     "repo": {
       "title": "Family Cards Demo Repo",
-      "k": "Repo — source store",
+      "k": "Repo \u2014 source store",
       "host": "GitHub",
-      "body": "Canonical source: page, gate, generator, and the architecture diagram — plus the generated card data the workers push.",
-      "icon": "📦"
+      "body": "Canonical source: page, gate, generator, sample data, and the architecture diagram \u2014 plus the generated card data.",
+      "icon": "\ud83d\udce6"
     },
     "page": {
       "title": "Card Page",
-      "k": "UI screen — static HTML / JS",
+      "k": "UI screen \u2014 static HTML / JS",
       "host": "Cloudflare Pages",
-      "body": "The only thing a reader ever sees. Renders one kid card, or both with tabs for owner / parent. Shows Big and CHANGED tags and the notes box. It never calls a calendar API.",
-      "icon": "🪟"
+      "body": "The only thing a reader ever sees. Renders one kid card, or both with tabs for owner / parent. Shows Big and CHANGED tags and the (disabled) notes box. It renders static JSON only \u2014 it never calls any API.",
+      "icon": "\ud83e\ude9f"
     },
     "gate": {
       "title": "Gate Middleware",
-      "k": "Server — Pages Function",
+      "k": "Server \u2014 Pages Function",
       "host": "Cloudflare Pages",
       "body": "Checks every request: redeems a code against stored hashes, sets a signed scoped cookie, enforces scope per file, answers the scope check, and handles the note endpoint. Fails closed.",
-      "icon": "🗄️"
+      "icon": "\ud83d\uddc4\ufe0f"
     },
     "carddata": {
       "title": "Per-kid Card Data",
-      "k": "Database — JSON files",
+      "k": "Database \u2014 JSON files",
       "host": "Cloudflare Pages (static files)",
-      "body": "emma.json and noah.json — one file per kid: two-week window, With Dad / With Mom days, entries, legs, CHANGED tags, and that kid's own notes only.",
-      "icon": "🛢️"
+      "body": "emma.json and noah.json \u2014 one file per kid: two-week window, With Dad / With Mom days, entries, legs, CHANGED tags, and that kid's own notes only.",
+      "icon": "\ud83d\udee2\ufe0f"
     },
     "codes": {
       "title": "Access Code Hashes",
-      "k": "Database — JSON file",
+      "k": "Database \u2014 JSON file",
       "host": "Cloudflare Pages (static files)",
-      "body": "codes.json holds SHA-256 hashes and expiries only. Plain codes are never stored anywhere in the system.",
-      "icon": "🛢️"
+      "body": "codes.json holds SHA-256 hashes and expiries only. Plain demo codes are never stored in the repo.",
+      "icon": "\ud83d\udee2\ufe0f"
     },
     "gen": {
       "title": "Card Generator",
-      "k": "Worker — Python",
-      "host": "Muse, assistant side",
-      "body": "The engine. Reads the calendars, drops sensitive and admin events, frames With Dad / With Mom, resolves drivers, applies Big and CHANGED, folds in kid notes, and writes the per-kid JSON.",
-      "icon": "⚙️"
+      "k": "Worker \u2014 Python",
+      "host": "Local (this repo)",
+      "body": "The engine of the demo. Reads the bundled sample events, drops the sensitive sample entries, frames With Dad / With Mom, resolves drivers, applies Big and CHANGED, and writes the per-kid JSON.",
+      "icon": "\u2699\ufe0f"
     },
     "minter": {
       "title": "Code Minter",
-      "k": "Worker — Python",
-      "host": "Muse, assistant side",
-      "body": "Mints random per-scope expiring codes in batches. Only the hashes are committed to the repo.",
-      "icon": "⚙️"
+      "k": "Worker \u2014 Python",
+      "host": "Local (this repo)",
+      "body": "Mints random per-scope expiring demo codes in batches. Only the hashes are committed to the repo.",
+      "icon": "\u2699\ufe0f"
     },
     "watch": {
-      "title": "Notes Watch + Rebuilds",
-      "k": "Worker — scheduled jobs",
-      "host": "Muse, assistant side",
-      "body": "Morning and nightly rebuilds, rebuilds when a change is spotted, and the notes watch: poll the form, alert Dad verbatim on a new note, then regenerate.",
-      "icon": "⚙️"
+      "title": "Card Snapshots",
+      "k": "Database \u2014 local files",
+      "host": "Local (this repo)",
+      "body": "The previous run's cards, kept in a local snapshots folder. The next generator run diffs against them to decide CHANGED tags and the Last changed stamp. Nothing is scheduled in the demo \u2014 you re-run the generator by hand.",
+      "icon": "\u2699\ufe0f"
     },
     "snap": {
-      "title": "Snapshots + Notes State",
-      "k": "Database — files, outside repo",
-      "host": "Muse, assistant side",
-      "body": "The previous card per kid (the CHANGED diff baseline and the Last changed stamp) and the seen-note IDs used to dedupe form responses.",
-      "icon": "🛢️"
+      "title": "Build Report",
+      "k": "File \u2014 JSON, written per run",
+      "host": "Local (this repo)",
+      "body": "A per-run JSON report of how each pickup / drop-off leg was decided (which rule won), written next to the snapshots. A development aid for working on the demo.",
+      "icon": "\ud83d\udee2\ufe0f"
     },
     "cal": {
-      "title": "Google Calendar",
-      "k": "External service — cloud",
-      "host": "Google",
-      "body": "The source calendars (generic labels: Primary, Family, Kids). Read only on the assistant side — no calendar credential ever lives on the web host.",
-      "icon": "☁️"
+      "title": "Sample Events",
+      "k": "Data \u2014 bundled JSON file",
+      "host": "This repo",
+      "body": "sample_events.json \u2014 the invented events the generator practices on, grouped into three sample calendars. The demo has no calendar connection and reads no account; this file is the generator's only input.",
+      "icon": "\ud83d\udcc4"
     },
     "form": {
-      "title": "Google Form",
-      "k": "External service — cloud",
-      "host": "Google",
-      "body": "The kid-notes inbox in the full flow: notes land as form responses, never linked publicly. In the demo this is stubbed — the box is disabled and nothing is forwarded.",
-      "icon": "☁️"
+      "title": "Sample Notes",
+      "k": "Data \u2014 inside the card JSON",
+      "host": "This repo",
+      "body": "A few invented notes baked into the sample card files so the design can show how notes would look on a card. The note box itself is disabled in the demo; nothing is collected or sent.",
+      "icon": "\ud83d\uddd2\ufe0f"
     }
   },
   "edges": {
@@ -123,12 +127,9 @@
     "gate->page": "allows scope",
     "gate->codes": "checks hash + expiry",
     "page->carddata": "fetches JSON by scope",
-    "page->gate": "POST /note",
-    "gate->form": "forwards note (full flow)",
-    "watch->form": "polls new notes",
-    "watch->gen": "alert + regenerate",
+    "page->gate": "POST /note (stub: discards)",
     "gen->cal": "reads events",
-    "gen->snap": "CHANGED diff",
+    "gen->snap": "writes the build report",
     "gen->carddata": "writes per-kid JSON",
     "minter->codes": "hashes only",
     "gen->repo": "pushes card data",
