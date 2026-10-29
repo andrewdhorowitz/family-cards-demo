@@ -42,10 +42,10 @@ def fixture_events():
                 f"2026-11-05T18:00:00{NOV}",
                 description="Pickup from the lesson. [src-event: fixture]",
             ),
-            # Cutoff boundary: pickup at exactly 4:20 PM is Dad's...
-            ev("Emma book club", f"2026-11-04T15:20:00{NOV}", f"2026-11-04T16:20:00{NOV}"),
+            # Cutoff boundary: pickup at exactly 4:30 PM is Dad's...
+            ev("Emma book club", f"2026-11-04T15:20:00{NOV}", f"2026-11-04T16:30:00{NOV}"),
             # ...one minute later it is "ask" and omitted.
-            ev("Emma chess club", f"2026-11-04T15:21:00{NOV}", f"2026-11-04T16:21:00{NOV}"),
+            ev("Emma chess club", f"2026-11-04T15:21:00{NOV}", f"2026-11-04T16:31:00{NOV}"),
             # A Mom travel block is positive proof: no pickup leg,
             # even though 4 PM is before the cutoff.
             ev("Emma dance class", f"2026-11-06T14:00:00{NOV}", f"2026-11-06T16:00:00{NOV}"),
@@ -133,7 +133,7 @@ def test_travel_block_proof_beats_cutoff(built):
 def test_cutoff_boundary_in_build(built):
     cards, _ = built
     _, book = find_entry(cards, "emma", "2026-11-04", "book")
-    assert {"kind": "pickup", "driver": "Dad", "time_label": "4:20 PM"} in book["legs"]
+    assert {"kind": "pickup", "driver": "Dad", "time_label": "4:30 PM"} in book["legs"]
     _, chess = find_entry(cards, "emma", "2026-11-04", "chess")
     assert [l["kind"] for l in chess["legs"]] == ["dropoff"]
 
