@@ -1,16 +1,15 @@
 """Unit tests for the demo generator's driver-decision logic.
 
-Same settled rules as the live Family Cards engine, in the demo's
-generic vocabulary (drivers are the ids "dad" / "mom"; kids Emma and
-Noah are invented):
+The demo's own card rules (drivers are the ids "dad" / "mom"; kids
+Emma and Noah are invented, as is every event):
 
   (1) title tag / manual transport name on the event itself
   (2) travel-block proof (a tagged block proves its driver; an
       untagged block proves nothing; a Mom block is positive proof
       the leg is Mom's, so the leg is absent from the card)
   (3) exception lists
-  (4) dad day -> Dad both ways; on Mom days the 4:20 PM cutoff
-      decides (<= 4:20 Dad, later = "ask", omitted from the card)
+  (4) dad day -> Dad both ways; on Mom days the 4:30 PM cutoff
+      decides (<= 4:30 Dad, later = "ask", omitted from the card)
 
 Plus the named-transport guard regression: in "Noah Pickup" the
 leading name is the kid being picked up, never a third-party driver.
@@ -21,7 +20,6 @@ import pytest
 from conftest import dt, ev
 
 NOV = "-05:00"  # EST offset for the November fixture dates
-OCT = "-04:00"  # EDT offset for the October fixture dates
 
 
 @pytest.mark.parametrize(
@@ -84,10 +82,10 @@ def test_dad_day_both_ways(gc):
 
 @pytest.mark.parametrize(
     "hh,mm,expected",
-    [(9, 0, "dad"), (16, 20, "dad"), (16, 21, "ask"), (20, 0, "ask")],
+    [(9, 0, "dad"), (16, 30, "dad"), (16, 31, "ask"), (20, 0, "ask")],
 )
 def test_mom_day_cutoff_boundary(gc, hh, mm, expected):
-    e = ev("Emma book club", f"2026-11-04T15:00:00{NOV}", f"2026-11-04T16:20:00{NOV}")
+    e = ev("Emma book club", f"2026-11-04T15:00:00{NOV}", f"2026-11-04T16:30:00{NOV}")
     assert gc.decide_kid_driver(e, "pickup", dt(2026, 11, 4, hh, mm), set()) == expected
 
 
@@ -95,22 +93,22 @@ def test_exception_no_pickup_blocks(gc):
     # NO_PICKUP_BLOCKS: this pickup is Mom's even at 3 PM, when the
     # cutoff rule alone would give Dad.
     e = ev(
-        "Noah School Career/College",
-        f"2026-10-14T14:00:00{OCT}",
-        f"2026-10-14T15:00:00{OCT}",
+        "Noah Robotics Showcase",
+        f"2027-01-12T14:00:00{NOV}",
+        f"2027-01-12T15:00:00{NOV}",
     )
-    assert gc.decide_kid_driver(e, "pickup", dt(2026, 10, 14, 15, 0), set()) == "mom"
+    assert gc.decide_kid_driver(e, "pickup", dt(2027, 1, 12, 15, 0), set()) == "mom"
 
 
 def test_exception_dad_oneoff(gc):
     # DAD_ONEOFF: this drop-off is Dad's even at 6:30 PM, when the
     # cutoff rule alone would say "ask".
     e = ev(
-        "Noah School Career/College",
-        f"2026-10-14T14:00:00{OCT}",
-        f"2026-10-14T15:00:00{OCT}",
+        "Noah Robotics Showcase",
+        f"2027-01-12T14:00:00{NOV}",
+        f"2027-01-12T15:00:00{NOV}",
     )
-    assert gc.decide_kid_driver(e, "dropoff", dt(2026, 10, 14, 18, 30), set()) == "dad"
+    assert gc.decide_kid_driver(e, "dropoff", dt(2027, 1, 12, 18, 30), set()) == "dad"
 
 
 def _block(gc, summary, start_iso, end_iso, description=""):
@@ -243,11 +241,11 @@ def test_resolve_untagged_block_is_not_proof(gc):
 
 def test_resolve_exception_list(gc):
     e = ev(
-        "Noah School Career/College",
-        f"2026-10-14T14:00:00{OCT}",
-        f"2026-10-14T15:00:00{OCT}",
+        "Noah Robotics Showcase",
+        f"2027-01-12T14:00:00{NOV}",
+        f"2027-01-12T15:00:00{NOV}",
     )
-    drv, rec = _resolve(gc, e, "pickup", dt(2026, 10, 14, 15, 0), dt(2026, 10, 14, 14, 0), dt(2026, 10, 14, 15, 0), set(), [])
+    drv, rec = _resolve(gc, e, "pickup", dt(2027, 1, 12, 15, 0), dt(2027, 1, 12, 14, 0), dt(2027, 1, 12, 15, 0), set(), [])
     assert drv == "mom"
     assert rec["source"] == "exception-list"
 
