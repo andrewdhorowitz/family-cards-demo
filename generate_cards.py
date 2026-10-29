@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Family Cards generator — demo edition.
+"""Family Cards generator — DEMO edition.
 
-Builds one kid-simple JSON data file per kid (emma.json, noah.json)
-from calendar events. The kids and events in this public demo are
-invented; the card files committed here were written by hand to match
-the schema, and this script shows how such files are produced.
+This is a self-contained public demo. It builds one kid-simple JSON
+data file per kid (emma.json, noah.json) from the invented sample
+events bundled in sample_events.json. Emma and Noah are fictional,
+their events are invented, and nothing here connects to any account,
+calendar, or service: the sample file is the only input, this folder
+is the only place anything is written.
 
-Rules implemented:
-- Two-week rolling window (default: today .. today+13 days,
-  America/New_York).
+The card rules the sample data exercises:
+- Two-week rolling window (default: the sample window in
+  sample_events.json; America/New_York).
 - Each day is framed "With Dad" when a dad-day event ("Dad time" /
   "Dad's weekend") covers that date, else "With Mom".
 - Only the kid's own events appear; non-school events are flagged
@@ -16,50 +18,41 @@ Rules implemented:
 - Pickup / drop-off legs are shown only when the driver resolves to
   Dad. Driver precedence: (1) an explicit title tag or manual
   transport name on the event itself, (2) driver evidence from a
-  matching "Travel to ..." block (travel blocks are parsed for their
-  assigned driver before being filtered out as entries), (3)
-  exception lists, (4) the day rule — Dad days resolve to Dad; on
-  Mom days a late-afternoon cutoff decides, and "ask" legs are
-  omitted (the kid's default assumption is Mom). A travel block
-  assigned to Mom is positive proof of Mom, so the leg stays off
-  the card.
+  matching "Travel to ..." block in the sample data, (3) the sample
+  exception lists below, (4) the day rule — Dad days resolve to Dad;
+  on Mom days an afternoon cutoff (4:30 PM in these sample rules)
+  decides, and "ask" legs are omitted (the kid's default assumption
+  is Mom). A travel block assigned to Mom is positive proof of Mom,
+  so the leg stays off the card.
 - A leg driven by a third party (named in a manual transport title)
   is an exception: it is shown, names the driver, and carries the
   CHANGED tag.
 - Entries that differ in time from the previous generated card
-  (a snapshot kept outside this repo) get a single CHANGED tag;
+  (a snapshot kept in a local folder) get a single CHANGED tag;
   the new time only is shown.
 - Sensitive-category events (therapy / medical / dental / financial /
-  legal / support-group etc.) are excluded entirely.
+  legal etc.) are excluded entirely — the sample data includes a
+  couple so the filter is visible.
 - Output contains no street addresses, emails, or phone numbers:
-  locations are reduced to a simple place name or a town.
+  locations are reduced to a simple place name.
 
-Calendar IDs come from the environment so no account identifiers
-are ever committed: FAMILY_CARDS_CAL_PRIMARY / _FAMILY / _KIDS.
-
-The page (index.html) never calls any calendar API; it only renders
-these JSON files.
+The page (index.html) only renders these JSON files.
 """
 
 import argparse
 import json
 import re
-import subprocess
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 LOCAL_TZ = ZoneInfo("America/New_York")
 
-# Calendar IDs come from the environment so no account identifiers are
-# ever committed: FAMILY_CARDS_CAL_PRIMARY / _FAMILY / _KIDS.
-import os
-
-CALENDARS = {
-    name: os.environ[f"FAMILY_CARDS_CAL_{name.upper()}"]
-    for name in ("primary", "family", "kids")
-    if os.environ.get(f"FAMILY_CARDS_CAL_{name.upper()}")
-}
+# The demo's only input: bundled invented sample events, grouped into
+# three sample "calendars". There is nothing to configure and nothing
+# is fetched — see sample_events.json.
+SAMPLE_FILE = Path(__file__).with_name("sample_events.json")
+CALENDARS = {"primary": "primary", "family": "family", "kids": "kids"}
 KIDS = {"emma": "Emma", "noah": "Noah"}
 
 # --- driver logic -------------------------------------------------------
@@ -88,14 +81,16 @@ def named_transport_driver(summary):
 
 
 TITLE_TAG_RE = re.compile(r"-\s*(dad|mom)\s*$", re.I)
-AFTER_HOURS = (16, 20, 0)  # late-afternoon cutoff on Mom days
+AFTER_HOURS = (16, 30, 0)  # sample afternoon cutoff on Mom days (4:30 PM)
 PICKUP_MIN_DURATION = timedelta(minutes=60)
-NO_PICKUP_BLOCKS = {("2026-10-14", "noah school career/college")}
-DAD_ONEOFF = {("2026-10-14", "noah school career/college")}
+# Sample exception lists: (date, event title) pairs where the sample
+# family's arrangements override the general rules. Invented for the
+# demo, like everything else in the sample data.
+NO_PICKUP_BLOCKS = {("2027-01-12", "noah robotics showcase")}
+DAD_ONEOFF = {("2027-01-12", "noah robotics showcase")}
 NO_TRAVEL_BLOCKS = {
-    ("2026-10-28", "emma teen time"),
-    ("2026-10-29", "noah voice lesson"),
-    ("2026-10-29", "emma full ensemble 6-9pm"),
+    ("2027-01-13", "emma art club"),
+    ("2027-01-14", "noah swim practice"),
 }
 
 
@@ -106,8 +101,8 @@ def transport_driver(ev):
 
 def decide_kid_driver(ev, leg, leg_dt, dad_dates):
     """'dad' / 'mom' / 'ask' / third-party name / None.
-    Same precedence as travel_blocks.py, plus a generic named-driver
-    transport title yields that name (a third-party exception)."""
+    A generic named-driver transport title yields that name
+    (a third-party exception)."""
     summary = ev.get("summary") or ""
     named = transport_driver(ev)
     if not KID_EVENT_RE.search(summary) and named is None:
@@ -137,7 +132,7 @@ def decide_kid_driver(ev, leg, leg_dt, dad_dates):
     return "ask"
 
 
-# --- travel blocks as driver proof (Oct 28 enhancement) ----------------------
+# --- travel blocks as driver proof -------------------------------------------
 TRAVEL_BLOCK_RE = re.compile(r"^travel to\s+(.+)$", re.I | re.S)
 SRC_EVENT_RE = re.compile(r"\[src-event:\s*([^\]]+)\]")
 DESC_LEG_DRIVER_RE = re.compile(
@@ -247,7 +242,7 @@ def event_explicit_driver(ev):
 
 
 def exception_driver(ev, leg, leg_dt):
-    """Precedence step 3: travel_blocks.py exception lists."""
+    """Precedence step 3: the sample exception lists."""
     try:
         ev_date = parse_dt(ev["start"]).date().isoformat()
     except (KeyError, ValueError):
@@ -264,7 +259,7 @@ def resolve_driver(
     ev, leg, leg_dt, ev_start, ev_end, dad_dates, blocks, kid, title, evidence_log
 ):
     """Full precedence: (1) event tag / manual transport, (2) travel
-    block proof, (3) exception lists, (4) dad-day / 4:20 PM rule.
+    block proof, (3) exception lists, (4) dad-day / cutoff rule.
     Appends one record per leg to evidence_log; returns the driver."""
     explicit, explicit_src = event_explicit_driver(ev)
     block = match_travel_block(blocks, ev, leg, ev_start, ev_end)
@@ -326,16 +321,15 @@ def resolve_driver(
 
 # --- filtering ---------------------------------------------------------------
 SENSITIVE_RE = re.compile(
-    r"therapy|therapist|counsel|psych|support group|oa group|"
+    r"therapy|therapist|counsel|psych|support group|"
     r"doctor|\bdr\b|appointment with dr|dentist|dental|orthodon|"
-    r"medical|clinic|hospital|insurance|autopay|bank|"
-    r"zelle|payment|legal|court|custody|divorce|attorney|law\b|"
-    r"prescriber|pharmacy|medication",
+    r"medical|clinic|hospital|insurance|bank|"
+    r"payment|legal|court|attorney|law\b|"
+    r"pharmacy|medication",
     re.I,
 )
 SKIP_RE = re.compile(
-    r"^(travel to|travel:|get ready|⚠)|\btravel short\b|"
-    r"^dad busy|tentative — holding|kid driving plan|"
+    r"^(travel to|travel:|get ready)|"
     r"birthday$|'s birthday$",
     re.I,
 )
@@ -349,37 +343,30 @@ def parse_dt(node):
 
 
 def fetch_events(cal_id, start, end):
-    params = {
-        "calendarId": cal_id,
-        "timeMin": start.astimezone(LOCAL_TZ).isoformat(),
-        "timeMax": end.astimezone(LOCAL_TZ).isoformat(),
-        "singleEvents": True,
-        "orderBy": "startTime",
-        "maxResults": 250,
-    }
-    out = subprocess.run(
-        ["hatch_gws_cli", "calendar", "events", "list", "--params", json.dumps(params)],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    return json.loads(out.stdout).get("items", [])
+    """The demo's event source: the bundled sample file.
+
+    Returns the invented events for one sample calendar, in the same
+    dict shape a calendar API would return, so the rest of the
+    pipeline reads exactly like a real integration — with no account,
+    no network, and no credentials anywhere.
+    """
+    data = json.loads(SAMPLE_FILE.read_text())
+    return [dict(ev) for ev in data.get(cal_id, [])]
 
 
 def simple_place(ev, title):
-    blob = f"{title} {ev.get('location') or ''}"
-    if re.search(r"riverside high|color guard|state cup", blob, re.I) and not re.search(
-        r"state college", blob, re.I
-    ):
-        place = "Riverside High"
-    elif re.search(r"state college", blob, re.I):
-        place = "State College"
-    elif re.search(r"middle school|maple dr", blob, re.I):
-        place = "Middle School"
-    else:
-        m = re.search(r",\s*([A-Z][a-zA-Z ]+?),\s*NJ", ev.get("location") or "")
-        place = m.group(1).strip() if m else None
-    return place
+    """Reduce a sample location to a simple place name: a venue name
+    when the location starts with one, otherwise the town. Street
+    addresses never reach a card."""
+    loc = (ev.get("location") or "").strip()
+    if not loc:
+        return None
+    parts = [x.strip() for x in loc.split(",") if x.strip()]
+    if not parts:
+        return None
+    if not parts[0][0].isdigit():
+        return parts[0]
+    return parts[1] if len(parts) > 1 else None
 
 
 def clean_title(summary, kid):
@@ -398,11 +385,6 @@ def fmt_time(dt):
 
 
 def build(start_d, end_d, snapshot_dir, suppress_diff_changed=False):
-    if len(CALENDARS) < 3:
-        raise SystemExit(
-            "Set FAMILY_CARDS_CAL_PRIMARY, FAMILY_CARDS_CAL_FAMILY "
-            "and FAMILY_CARDS_CAL_KIDS environment variables."
-        )
     win_start = datetime.combine(start_d, time.min, LOCAL_TZ)
     win_end = datetime.combine(end_d + timedelta(days=1), time.min, LOCAL_TZ)
     raw, seen = [], set()
@@ -484,7 +466,7 @@ def build(start_d, end_d, snapshot_dir, suppress_diff_changed=False):
             context.append((summary, "not specific to Emma or Noah"))
             continue
         if (start.date().isoformat(), low) in NO_TRAVEL_BLOCKS:
-            pass  # settled legs in travel_blocks; card still lists the event
+            pass  # legs settled by the travel blocks; the card still lists the event
 
         for kid in kid_keys:
             title = clean_title(summary, kid)
@@ -754,7 +736,11 @@ def main():
     ap.add_argument("--start", default=None, help="YYYY-MM-DD (default today)")
     ap.add_argument("--days", type=int, default=14)
     ap.add_argument("--out-dir", default=".")
-    ap.add_argument("--snapshot-dir", required=True)
+    ap.add_argument(
+        "--snapshot-dir",
+        default="snapshots",
+        help="local folder for previous-card snapshots (default: ./snapshots)",
+    )
     ap.add_argument(
         "--suppress-diff-changed",
         action="store_true",
@@ -762,9 +748,15 @@ def main():
         "CHANGED from the snapshot time diff this run",
     )
     args = ap.parse_args()
-    start_d = (
-        date.fromisoformat(args.start) if args.start else datetime.now(LOCAL_TZ).date()
-    )
+    if args.start:
+        start_d = date.fromisoformat(args.start)
+    else:
+        # Default: the start of the bundled sample window.
+        sample = json.loads(SAMPLE_FILE.read_text())
+        all_dates = [
+            parse_dt(ev["start"]).date() for bucket in sample.values() for ev in bucket
+        ]
+        start_d = min(all_dates)
     end_d = start_d + timedelta(days=args.days - 1)
     cards, filtered, context, counts, evidence = build(
         start_d, end_d, args.snapshot_dir, args.suppress_diff_changed
@@ -783,7 +775,7 @@ def main():
         )
     )
     ev_path = Path(args.snapshot_dir).parent / (
-        f"driver-evidence-{start_d.isoformat()}_{end_d.isoformat()}.json"
+        f"build-report-{start_d.isoformat()}_{end_d.isoformat()}.json"
     )
     ev_path.write_text(
         json.dumps(
