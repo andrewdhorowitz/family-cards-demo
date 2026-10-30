@@ -1,0 +1,74 @@
+# SonarCloud — repo-template kit (kit v3.13).
+# Installed to .github/workflows/sonar.yml by setup-settings.sh
+# (travels at ci-src/ for the same reason as ci.yml — see
+# BOOTSTRAP-NOTES.md).
+#
+# Static analysis by SonarQube Cloud (SonarCloud): bugs,
+# vulnerabilities, security hotspots, code smells, and duplication
+# across the project's JavaScript and Python — the layer the linters
+# don't reach. REPORT-ONLY: results publish to sonarcloud.io and the
+# scan never fails this build. Turning the SonarCloud quality gate
+# into a blocking check is a separate owner decision (the Lighthouse
+# precedent), not the standard's default.
+#
+# INERT UNTIL WIRED — by design. Analysis needs three things only the
+# repo owner can supply, because the SonarCloud GitHub App install is
+# an account-level act: a SonarCloud project for this repo, the
+# SONAR_TOKEN repo secret, and real values in sonar-project.properties
+# (the template ships __SONAR_ placeholders). Until all three exist,
+# the preflight step below says so in a ::notice:: and the scan step
+# skips — the run stays green and truthful instead of failing on
+# every push for an expected state. Public repos only: SonarCloud's
+# free tier doesn't cover private repos, so the converger reports
+# those as expected skips and this workflow never activates there.
+name: SonarCloud
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  sonar:
+    name: SonarCloud analysis (report-only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history — SonarCloud uses it for blame / new-code detection
+      - name: Preflight — is SonarCloud wired for this repo?
+        id: preflight
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          ready=true
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "SONAR_TOKEN secret is not set."
+            ready=false
+          fi
+          if [ ! -f sonar-project.properties ]; then
+            echo "sonar-project.properties is missing at the repo root."
+            ready=false
+          elif grep -q '__SONAR_' sonar-project.properties; then
+            echo "sonar-project.properties still carries template placeholders (__SONAR_...)."
+            ready=false
+          fi
+          if [ "$ready" = "true" ]; then
+            echo "SonarCloud is wired — the analysis will run."
+          else
+            echo "::notice::SonarCloud not wired for this repo yet — analysis skipped (awaiting owner install: SonarCloud project + SONAR_TOKEN secret + project keys in sonar-project.properties). Expected state until then; the run stays green by design."
+          fi
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+      - name: SonarCloud scan (report-only)
+        if: steps.preflight.outputs.ready == 'true'
+        uses: SonarSource/sonarqube-scan-action@v8
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
