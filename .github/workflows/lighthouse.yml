@@ -27,6 +27,6 @@ jobs:
         uses: treosh/lighthouse-ci-action@v12
         with:
           urls: |
-            https://andrewdhorowitz.github.io/family-cards-demo/
+            https://demo.andrewdhorowitz.com/
           uploadArtifacts: true
           temporaryPublicStorage: true

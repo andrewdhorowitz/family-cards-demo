@@ -2,9 +2,9 @@
   "private_hosts": [],
   "project": "Family Cards Demo",
   "public_urls": {
-    "demo": "https://andrewdhorowitz.github.io/family-cards-demo/",
+    "demo": "https://demo.andrewdhorowitz.com/",
     "docs": null,
-    "interactive": "https://andrewdhorowitz.github.io/family-cards-demo/docs/interactive-architecture.html",
+    "interactive": "https://demo.andrewdhorowitz.com/docs/interactive-architecture.html",
     "site": null
   },
   "section": {

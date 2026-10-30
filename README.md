@@ -8,9 +8,9 @@ fake: invented kids ("Emma" / "Noah"), invented events, a fixed public
 demo code. Nothing in this repo connects to a real calendar, account,
 or family, and nothing here is a working copy of anything else.
 
-> **Published:** Demo — https://andrewdhorowitz.github.io/family-cards-demo/ · Interactive — https://andrewdhorowitz.github.io/family-cards-demo/docs/interactive-architecture.html · Repo — https://github.com/andrewdhorowitz/family-cards-demo
+> **Published:** Demo — https://demo.andrewdhorowitz.com/ · Interactive — https://demo.andrewdhorowitz.com/docs/interactive-architecture.html · Repo — https://github.com/andrewdhorowitz/family-cards-demo
 
-**See it:** https://andrewdhorowitz.github.io/family-cards-demo/ —
+**See it:** https://demo.andrewdhorowitz.com/ —
 the demo's home is GitHub Pages (static hosting under the
 `/family-cards-demo/` subpath). No code or sign-in is needed there:
 with no gate answering, the page runs in open demo mode and shows both
