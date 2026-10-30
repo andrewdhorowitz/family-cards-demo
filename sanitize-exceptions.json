@@ -1,0 +1,19 @@
+{
+  "exceptions": [
+    {
+      "path": "generate_cards.py",
+      "class": "topic",
+      "reason": "This file DEFINES the sensitive-category redaction filter \u2014 its docstring and category regex are the filter itself, so the gate flags the filter's own word list. It contains no one's data."
+    },
+    {
+      "path": "sample_events.json",
+      "class": "topic",
+      "reason": "Generator INPUT fixture set with invented kids only (Emma/Noah). Its sensitive-category examples ('Emma therapy session', 'Noah dentist appointment') exist so the filter has something to remove before rendering; the built outputs (index.html, emma.json, noah.json, docs/) carry no exceptions and are fully gated."
+    },
+    {
+      "path": "tests/",
+      "class": "topic",
+      "reason": "Test fixtures and assertions for the redaction filter, invented data only: sensitive-category fixture events prove the filter drops them, and assertions verify the built cards contain none of these terms."
+    }
+  ]
+}
