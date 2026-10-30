@@ -24,11 +24,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the demo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: demo
       - name: Check out fleet-kit (checker + term lists)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: andrewdhorowitz/fleet-kit
           path: fleet-kit
