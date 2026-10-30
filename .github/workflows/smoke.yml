@@ -36,7 +36,7 @@ jobs:
             echo "present=false" >> "$GITHUB_OUTPUT"
             echo "No smoke/ directory — skipping."
           fi
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.suite.outputs.present == 'true'
         with:
           node-version: "20"
