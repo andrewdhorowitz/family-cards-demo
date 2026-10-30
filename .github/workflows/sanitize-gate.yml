@@ -32,7 +32,7 @@ jobs:
         with:
           repository: andrewdhorowitz/fleet-kit
           path: fleet-kit
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Fail on any family identifier or off-limit topic

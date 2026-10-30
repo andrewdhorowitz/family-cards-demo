@@ -34,7 +34,7 @@ jobs:
             echo "present=false" >> "$GITHUB_OUTPUT"
             echo "No tests/ directory — skipping."
           fi
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         if: steps.suite.outputs.present == 'true'
         with:
           python-version: "3.12"
