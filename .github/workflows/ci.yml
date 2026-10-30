@@ -4,6 +4,10 @@
 # Checks run AFTER push (no branch locks), per the owner's no-lockout rule.
 name: CI
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
   pull_request:
