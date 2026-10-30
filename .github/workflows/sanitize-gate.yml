@@ -1,0 +1,38 @@
+# Sanitize gate — this repo IS the demo: PUBLIC AND GENERIC, or
+# it does not ship (PUBLISH-MANIFEST-SPEC, sanitization addendum).
+# The generic PII-shape checks in ci.yml stay; this gate adds the
+# fleet's named identifiers and off-limit topics. The lists live
+# in fleet-kit (shared infrastructure), checked out at CI time —
+# a forbidden-names list is never committed here, because that
+# would itself publish the names.
+name: Sanitize gate
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the demo
+        uses: actions/checkout@v4
+        with:
+          path: demo
+      - name: Check out fleet-kit (checker + term lists)
+        uses: actions/checkout@v4
+        with:
+          repository: andrewdhorowitz/fleet-kit
+          path: fleet-kit
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fail on any family identifier or off-limit topic
+        run: >
+          python3 fleet-kit/scripts/check_sanitize.py
+          --terms fleet-kit/scripts/sanitize_terms.json
+          --root demo
