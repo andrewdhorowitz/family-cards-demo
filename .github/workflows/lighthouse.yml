@@ -11,8 +11,6 @@ name: Lighthouse
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 14 * * 1" # Mondays 14:00 UTC
 
 permissions:
   contents: read
