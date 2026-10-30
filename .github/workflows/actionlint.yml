@@ -25,7 +25,7 @@ jobs:
     name: Lint workflow files
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Download actionlint (pinned v1.7.11, official release)
         run: |
           curl -sSfL -o /tmp/actionlint.tar.gz \
