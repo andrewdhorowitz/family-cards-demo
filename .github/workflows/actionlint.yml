@@ -9,6 +9,10 @@
 # release (v1.7.11), not a third-party wrapper action.
 name: Actionlint
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
   pull_request:
