@@ -10,6 +10,10 @@
 # exists because the demo runs open on static hosting.
 name: Smoke
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
   push:
