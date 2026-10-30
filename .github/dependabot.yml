@@ -1,8 +1,20 @@
 # Dependabot — part of the repo-template standard kit.
-# Opens weekly version-update PRs for the repo's GitHub Actions pins
-# and Python packages. (Dependabot *alerts* and *security updates*
-# are repo settings — setup-settings.sh turns those on; this file is
+# Opens weekly version-update PRs for the repo's GitHub Actions
+# pins. (Dependabot *alerts* and *security updates* are repo
+# settings — setup-settings.sh turns those on; this file is
 # what schedules the version-update PRs themselves.)
+#
+# Ecosystems are tailored to what THIS repo actually contains.
+# The pip entry was removed on 2026-10-30: this repo has no
+# Python manifest anywhere (no requirements.txt, pyproject.toml,
+# setup.py, or Pipfile — its Python is stdlib-only tooling:
+# generate_cards.py, mint_codes.py, tests), and an ecosystem
+# whose directory holds no manifest does not skip — every
+# weekly run FAILS ("No files found in /"), the same failure
+# repo-template hit on 2026-10-29. If this repo ever gains a
+# Python manifest, add the pip entry back. See repo-template
+# BOOTSTRAP-NOTES.md, "Dependabot ecosystems are tailored per
+# repo".
 version: 2
 updates:
   - package-ecosystem: "github-actions"
@@ -12,9 +24,3 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
-  - package-ecosystem: "pip"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    labels:
-      - "dependencies"
